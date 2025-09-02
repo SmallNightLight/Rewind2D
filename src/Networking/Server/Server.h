@@ -12,12 +12,10 @@
 #include <asio.hpp>
 #include <thread>
 
-using asio::ip::udp;
-
 class Server
 {
 public:
-    Server(unsigned short localPort) : socket(io_service, ClientEndpoint(udp::v4(), localPort)), service_thread(&Server::RunService, this), nextClientID(0)
+    explicit Server(unsigned short localPort) : socket(m_context, ClientEndpoint(asio::ip::udp::v4(), localPort)), service_thread(&Server::RunService, this), nextClientID(0)
     {
         Info("Starting server on local port ", localPort);
     }
@@ -25,7 +23,7 @@ public:
     ~Server()
     {
         socket.cancel();
-        io_service.stop();
+        m_context.stop();
         service_thread.join();
     }
 
@@ -38,29 +36,29 @@ public:
                 Debug("Sending packet: (Bytes: ", packet.Data.GetBuffer().size(), ", Receiver: ", clientID, ", Frame: ", packet.Frame, ")");
                 Send(packet.Data.GetBuffer(), Clients.at(clientID));
             }
-           else
-           {
-               //Capture the necessary data for sending in a lambda
-               auto sendFunction = [this, packet, clientID]()
-               {
-                   try
-                   {
-                       Send(packet.Data.GetBuffer(), Clients.at(clientID));
-                       Debug("Sent packet: (Bytes: ", packet.Data.GetBuffer().size(), ", Receiver: ", clientID, ", Frame: ", packet.Frame, ")");
-                   }
-                   catch (const std::out_of_range&)
-                   {
+            else
+            {
+                //Capture the necessary data for sending in a lambda
+                auto sendFunction = [this, packet, clientID]()
+                {
+                    try
+                    {
+                        Send(packet.Data.GetBuffer(), Clients.at(clientID));
+                        Debug("Sent packet: (Bytes: ", packet.Data.GetBuffer().size(), ", Receiver: ", clientID, ", Frame: ", packet.Frame, ")");
+                    }
+                    catch (const std::out_of_range&)
+                    {
                        Error("Cannot send packet to client, unknown client ID ", clientID);
-                   }
-               };
+                    }
+                };
 
-               //Use a thread to introduce a delay before sending
-               std::thread([sendFunction, delayMilliseconds]()
-               {
-                   std::this_thread::sleep_for(std::chrono::milliseconds(delayMilliseconds));
-                   sendFunction();
-               }).detach();
-           }
+                //Use a thread to introduce a delay before sending
+                std::thread([sendFunction, delayMilliseconds]()
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(delayMilliseconds));
+                    sendFunction();
+                }).detach();
+            }
         }
         catch (const std::out_of_range&)
         {
@@ -70,7 +68,7 @@ public:
 
     void SendToAllExcept(const Packet& packet, ClientID clientID, uint32_t delayMilliseconds = 0)
     {
-        for (auto client: Clients)
+        for (auto& client: Clients)
         {
             if (client.first != clientID)
                 SendToClient(packet, client.first, delayMilliseconds);
@@ -79,7 +77,7 @@ public:
 
     void SendToAll(const Packet& packet, uint32_t delayMilliseconds = 0)
     {
-        for (auto client: Clients)
+        for (auto& client: Clients)
         {
             SendToClient(packet, client.first, delayMilliseconds);
         }
@@ -113,19 +111,19 @@ private:
                 std::vector<uint8_t> message = std::vector<uint8_t>(recv_buffer.data(), recv_buffer.data() + bytes_transferred);
                 ClientID clientID;
 
-                if (message.size() == 0)
+                if (message.empty())
                 {
                     //Accept client to join
                     GetClientID(remote_endpoint, clientID, true);
 
                     //Send joining of client to other clients
-                    for (auto client: Clients)
+                    for (auto& client: Clients)
                     {
                         SendToClient(Packet(clientID, clientID == client.first ? AcceptJoin : NewClientPacket, ClientCurrentFrames[clientID]), client.first);
                     }
 
                     //Send other existing clients to client
-                    for (auto client: Clients)
+                    for (auto& client: Clients)
                     {
                         if (client.first == clientID) continue;
 
@@ -170,7 +168,7 @@ private:
                             case InputPacket: //Continue the input packet to other clients
                             {
                                 //Update information on the frame
-                                if (ClientCurrentFrames.find(clientID) != ClientCurrentFrames.end() &&  ClientCurrentFrames.at(clientID) < packet.Frame)
+                                if (ClientCurrentFrames.contains(clientID) &&  ClientCurrentFrames.at(clientID) < packet.Frame)
                                     ClientCurrentFrames[clientID] = packet.Frame;
 
                                 SendToAllExcept(packet, clientID, InputPacketDelay);
@@ -224,7 +222,7 @@ private:
         //socket.send_to(asio::buffer(message), client); - blocking send
     }
 
-    void HandleSend(const std::error_code& error, std::size_t bytes_transferred)
+    static void HandleSend(const std::error_code& error, std::size_t bytes_transferred)
     {
         if (error)
         {
@@ -251,11 +249,11 @@ private:
     {
         StartReceive();
 
-        while (!io_service.stopped())
+        while (!m_context.stopped())
         {
             try
             {
-                io_service.run();
+                m_context.run();
             }
             catch (const std::exception& exception)
             {
@@ -270,9 +268,9 @@ private:
         Debug("Server network thread stopped");
     }
 
-    bool ClientExists(const ClientEndpoint& endpoint)
+    bool ClientExists(const ClientEndpoint& endpoint) const
     {
-        return Endpoints.find(endpoint) != Endpoints.end();
+        return Endpoints.contains(endpoint);
     }
 
     //Returns the client ID, and creates a new one, when it doesn't have an existing ID assigned
@@ -336,8 +334,8 @@ public:
     std::vector<std::function<void(ClientID)>> OnDisconnectHandlers;
 
 private:
-    asio::io_service io_service;
-    udp::socket socket;
+    asio::io_context m_context;
+    asio::ip::udp::socket socket;
     ClientEndpoint server_endpoint;
     ClientEndpoint remote_endpoint;
     std::array<char, NetworkBufferSize> recv_buffer { };
@@ -349,6 +347,5 @@ private:
     ClientID nextClientID;
 
     std::set<ClientID> clientsWaitingForGameData;
-
     ThreadedQueue<std::vector<uint8_t>> incomingMessages;
 };

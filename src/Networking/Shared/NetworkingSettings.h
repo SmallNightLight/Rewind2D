@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <asio/ip/udp.hpp>
 
 static constexpr int NetworkBufferSize = 16384;

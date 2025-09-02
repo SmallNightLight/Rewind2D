@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
 project(Server LANGUAGES CXX)
-
 set(CMAKE_CXX_STANDARD 23)
 
 if(WIN32)
@@ -14,16 +13,14 @@ add_executable(Server main.cpp
         ../Shared/Packet.h
         ../Shared/ThreadedQueue.h
         ../Shared/NetworkingSettings.h
-
-        ../../Math/Stream.h
 )
 
 if(TARGET SERVER)
-    add_subdirectory(../../Math ${CMAKE_BINARY_DIR}/MathBuild)
+    add_subdirectory(../../Math)
 endif()
 
-#Asio
-find_package(asio CONFIG REQUIRED)
+#ASIO
+target_include_directories(Server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/asio/asio/include)
 find_package(Threads REQUIRED)
-target_link_libraries(Server PRIVATE asio::asio Threads::Threads)
+target_link_libraries(Server PRIVATE Threads::Threads)
 target_compile_definitions(Server PRIVATE ASIO_STANDALONE)

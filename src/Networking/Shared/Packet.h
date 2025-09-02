@@ -30,7 +30,7 @@ struct Packet
         Frame = Data.ReadInteger<uint32_t>();
     }
 
-    bool VerifyClientID(ClientID clientID)
+    bool VerifyClientID(ClientID clientID) const
     {
         return ID == clientID;
     }
