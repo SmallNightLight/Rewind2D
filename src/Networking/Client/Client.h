@@ -10,21 +10,19 @@
 #include <thread>
 #include <asio.hpp>
 
-using asio::ip::udp;
-
 class Client
 {
 public:
-    Client(std::string serverIP, std::string serverPort) : socket(io_service, udp::endpoint(udp::v4(), 0)), service_thread(&Client::RunService, this)
+    Client(const std::string& serverIP, const std::string& serverPort) : socket(m_context, asio::ip::udp::endpoint(asio::ip::udp::v4(), 0)), service_thread(&Client::RunService, this)
     {
-        udp::resolver resolver(io_service);
-        udp::resolver::query query(udp::v4(), serverIP, serverPort);
-        server_endpoint = *resolver.resolve(query);
+        asio::ip::udp::resolver resolver(m_context);
+        auto results = resolver.resolve(asio::ip::udp::v4(), serverIP, serverPort);
+        server_endpoint = *results.begin();
     }
 
     ~Client()
     {
-        io_service.stop();
+        m_context.stop();
         service_thread.join();
     }
 
@@ -74,11 +72,11 @@ private:
     {
         StartReceive();
 
-        while (!io_service.stopped())
+        while (!m_context.stopped())
         {
             try
             {
-                io_service.run();
+                m_context.run();
             }
             catch (const std::exception& e)
             {
@@ -94,11 +92,11 @@ private:
     }
 
 private:
-    asio::io_context io_service;
-    udp::socket socket;
-    udp::endpoint server_endpoint;
-    udp::endpoint remote_endpoint;
-    std::array<uint8_t, NetworkBufferSize> recv_buffer;
+    asio::io_context m_context;
+    asio::ip::udp::socket socket;
+    asio::ip::udp::endpoint server_endpoint;
+    asio::ip::udp::endpoint remote_endpoint;
+    std::array<uint8_t, NetworkBufferSize> recv_buffer { };
     std::thread service_thread;
 
     ThreadedQueue<std::vector<uint8_t>> incomingMessages;

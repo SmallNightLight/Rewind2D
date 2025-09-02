@@ -136,7 +136,7 @@ public:
             }
         }
 
-        if (clientsWaitingToJoin.size() > 0)
+        if (!clientsWaitingToJoin.empty())
         {
             for (auto newClient : clientsWaitingToJoin)
             {
@@ -160,7 +160,7 @@ public:
 
     void UpdateInput(ClientID clientID, const InputData& inputData)
     {
-        if (clientInputs.find(clientID) == clientInputs.end()) return;
+        if (!clientInputs.contains(clientID)) return;
 
         clientInputs.at(clientID).AddInput(inputData);
     }
@@ -177,7 +177,7 @@ public:
 
     void AddClient(ClientID clientID, uint32_t frame)
     {
-        if (clientInputs.find(clientID) != clientInputs.end())
+        if (clientInputs.contains(clientID))
         {
             Warning("Can not add a client that already exists");
             return;
@@ -187,7 +187,7 @@ public:
         clientInputs.emplace(clientID, InputCollection(playerInputKeys, frame,MaxRollBackFrames * 2));
 
         //Add input for the first few frames to avoid missing input
-        for(int i = frame; i < frame + 5; ++i)
+        for(uint32_t i = frame; i < frame + 5; ++i)
         {
             InputData input = InputData(i, std::vector<bool>(playerInputKeys.size()), std::vector<bool>(playerInputKeys.size()), 0, 0);
             clientInputs.at(clientID).AddInput(input);
@@ -202,7 +202,7 @@ public:
             return;
         }
 
-        if (clientInputs.find(clientID) == clientInputs.end())
+        if (!clientInputs.contains(clientID))
         {
             Warning("Can not remove a client that does not exists");
             return;
@@ -224,7 +224,7 @@ public:
 
     Input* GetClientInput(ClientID clientID, uint32_t frame)
     {
-        if (clientInputs.find(clientID) == clientInputs.end())
+        if (!clientInputs.contains(clientID))
         {
             throw std::invalid_argument("clientID not found");
         }
@@ -296,7 +296,7 @@ private:
                     auto message = client.PopMessage();
                     Packet packet(message);
 
-                    if(packet.Type == AcceptJoin)
+                    if (packet.Type == AcceptJoin)
                     {
                         //Add packet to queue so it can be evaluated later
                         receivedMessages.push_back(packet.Data.GetBuffer());
