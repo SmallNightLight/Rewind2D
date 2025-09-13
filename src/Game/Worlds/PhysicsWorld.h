@@ -1,19 +1,19 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-
 #include "../../Math/FixedTypes.h"
 #include "../../Math/Stream.h"
 #include "../World.h"
 #include "../CacheManager.h"
 #include "../../Rendering/Camera.h"
 #include "../../Physics/Physics.h"
-#include "../Input/Input.h"
+#include "../Input/Action.h"
 #include "PhysicsWorldData.h"
 
 #include <vector>
 #include <array>
 #include <random>
+
+#include <SDL3/SDL_render.h>
 
 class PhysicsWorld : public World
 {
@@ -23,6 +23,11 @@ public:
         SetupComponents(player);
         SetupSystems(player);
         InitializeCamera();
+    }
+
+    void Initialize(SDL_Renderer* renderer)
+    {
+        m_Renderer = renderer;
     }
 
     ///Registers all components to the layer, sets the component collections and creates a signature which includes all components
@@ -65,7 +70,7 @@ public:
 
     void InitializeCamera()
     {
-        camera = Camera(static_cast<Fixed16_16>(SCREEN_WIDTH), static_cast<Fixed16_16>(SCREEN_HEIGHT), Fixed16_16(20));
+        camera = Camera(static_cast<Fixed16_16>(s_ScreenWidth), static_cast<Fixed16_16>(s_ScreenHeight), Fixed16_16(20));
     }
 
     void AddObjects()
@@ -114,12 +119,12 @@ public:
         baseLayer.AddComponent(box2, Movable(Fixed16_16(5)));
     }
 
-    void Update(Fixed16_16 deltaTime, std::vector<Input*>& inputs)
+    void Update(Fixed16_16 deltaTime)
     {
-        UpdateDebug(inputs);
+        //UpdateDebug(inputs);
 
-        Input* playerInput = inputs[0];
-        movingSystem->Update(deltaTime, playerInput->GetKey(GLFW_KEY_W), playerInput->GetKey(GLFW_KEY_S), playerInput->GetKey(GLFW_KEY_A), playerInput->GetKey(GLFW_KEY_D), playerInput->GetKey(GLFW_KEY_Q), playerInput->GetKey(GLFW_KEY_E));
+        //Input* playerInput = inputs[0];
+        //movingSystem->Update(deltaTime, playerInput->GetKey(GLFW_KEY_W), playerInput->GetKey(GLFW_KEY_S), playerInput->GetKey(GLFW_KEY_A), playerInput->GetKey(GLFW_KEY_D), playerInput->GetKey(GLFW_KEY_Q), playerInput->GetKey(GLFW_KEY_E));
 
         rigidBodySystem->HandleCollisions(physicsWorldData.CurrentFrame);
         rigidBodySystem->IntegrateForces(deltaTime);
@@ -138,35 +143,56 @@ public:
 
     void UpdateDebug(std::vector<Input*>& inputs)
     {
-        for (Input* input : inputs)
-        {
-            if (input->GetKeyDown(GLFW_MOUSE_BUTTON_LEFT))
-            {
-                PhysicsUtils::CreateRandomCircleFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
-                std::cout << "Create new circle\n";
-            }
-
-            if (input->GetKeyDown(GLFW_MOUSE_BUTTON_RIGHT))
-            {
-                PhysicsUtils::CreateRandomBoxFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
-                std::cout << "Create new box\n";
-            }
-
-            if (input->GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
-            {
-                PhysicsUtils::CreateRandomPolygonFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
-                std::cout << "Create new convex\n";
-            }
-        }
+        // for (Input* input : inputs)
+        // {
+        //     if (input->GetKeyDown(GLFW_MOUSE_BUTTON_LEFT))
+        //     {
+        //         PhysicsUtils::CreateRandomCircleFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
+        //         std::cout << "Create new circle\n";
+        //     }
+        //
+        //     if (input->GetKeyDown(GLFW_MOUSE_BUTTON_RIGHT))
+        //     {
+        //         PhysicsUtils::CreateRandomBoxFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
+        //         std::cout << "Create new box\n";
+        //     }
+        //
+        //     if (input->GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
+        //     {
+        //         PhysicsUtils::CreateRandomPolygonFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
+        //         std::cout << "Create new convex\n";
+        //     }
+        // }
     }
 
-    void Render() const
+    void Render(SDL_Renderer* renderer, Action* action)
     {
-        camera.Apply();
+        Vector2 movement = Vector2(0, 0);
+        Fixed16_16 speed = Fixed16_16(0, 5);
 
-        circleColliderRenderer->Render();
-        boxColliderRenderer->Render();
-        polygonColliderRenderer->Render();
+        if (action->GetKey(0))
+        {
+            movement += Vector2(0, 1);
+        }
+        if (action->GetKey(1))
+        {
+            movement += Vector2(0, -1);
+        }
+        if (action->GetKey(2))
+        {
+            movement += Vector2(1, 0);
+        }
+        if (action->GetKey(3))
+        {
+            movement += Vector2(-1, 0);
+        }
+
+        movement = movement.Normalize();
+        camera.Move(movement * speed);
+
+        circleColliderRenderer->Render(m_Renderer, camera);
+        boxColliderRenderer->Render(m_Renderer, camera);
+        polygonColliderRenderer->Render(m_Renderer, camera);
 
         //Debug
         if (PhysicsDebugMode)
@@ -456,7 +482,7 @@ private:
         }
     }
 
-    static void RenderDebugInfo(std::vector<ContactPair>& contactPairs)
+    void RenderDebugInfo(std::vector<ContactPair>& contactPairs) const
     {
         for (ContactPair contactPair : contactPairs)
         {
@@ -464,25 +490,21 @@ private:
             {
                 Contact& contact = contactPair.Contacts[i];
 
-                //Render contact normal
+                float px = contact.Position.X.ToFloating<float>();
+                float py = contact.Position.Y.ToFloating<float>();
                 float normalLength = -contact.Separation.ToFloating<float>() * 20;
-                glLineWidth(2.0f);
-                glColor3f(1.0f, 0.0f, 0.0f);
-                glBegin(GL_LINES);
-                glVertex2f(contact.Position.X.ToFloating<float>(), contact.Position.Y.ToFloating<float>());
-                glVertex2f(contact.Position.X.ToFloating<float>() + contactPair.Normal.X.ToFloating<float>() * normalLength, contact.Position.Y.ToFloating<float>() + contactPair.Normal.Y.ToFloating<float>() * normalLength);
-                glEnd();
+                float nx = contactPair.Normal.X.ToFloating<float>() * normalLength;
+                float ny = contactPair.Normal.Y.ToFloating<float>() * normalLength;
+
+                //Render contact normal
+                SDL_SetRenderDrawColor(m_Renderer, 255, 0, 0, 255);
+                SDL_RenderLine(m_Renderer, px, py, px + nx, py + ny);
 
                 //Render contact point
                 constexpr float size = 0.4f;
-                glLineWidth(2.0f);
-                glColor3f(0.5f, 0.5f, 0.5f);
-                glBegin(GL_LINES);
-                glVertex2f(contact.Position.X.ToFloating<float>() - size, contact.Position.Y.ToFloating<float>() - size);
-                glVertex2f(contact.Position.X.ToFloating<float>() + size, contact.Position.Y.ToFloating<float>() + size);
-                glVertex2f(contact.Position.X.ToFloating<float>() + size, contact.Position.Y.ToFloating<float>() - size);
-                glVertex2f(contact.Position.X.ToFloating<float>() - size, contact.Position.Y.ToFloating<float>() + size);
-                glEnd();
+                SDL_SetRenderDrawColor(m_Renderer, 128, 128, 128, 255);
+                SDL_RenderLine(m_Renderer, px - size, py - size, px + size, py + size);
+                SDL_RenderLine(m_Renderer, px + size, py - size, px - size, py + size);
             }
         }
     }
@@ -490,6 +512,7 @@ private:
 private:
     PhysicsLayer& baseLayer;
     PhysicsWorldData& physicsWorldData;
+    SDL_Renderer* m_Renderer;
 
     //Systems
     RigidBody* rigidBodySystem;

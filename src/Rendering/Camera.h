@@ -2,7 +2,7 @@
 
 #include "../Math/FixedTypes.h"
 
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL_rect.h>
 
 struct Camera
 {
@@ -10,22 +10,26 @@ struct Camera
     Fixed16_16 ZoomLevel;
     Vector2 Position;
 
+    //Cache
     Fixed16_16 Left, Right, Bottom, Top;
+    Fixed16_16 ScaleX, ScaleY;
 
     inline Camera() noexcept = default;
 
     constexpr inline explicit Camera(Fixed16_16 width, Fixed16_16 height, Fixed16_16 zoomLevel = Fixed16_16(1))
-        : Width(width), Height(height), ZoomLevel(zoomLevel), Position(0, 0), Left(0), Right(0), Bottom(0), Top(0)
+        : Width(width), Height(height), ZoomLevel(zoomLevel), Position(0, 0), Left(0), Right(0), Bottom(0), Top(0), ScaleX(0), ScaleY(0)
     {
         UpdateView();
     }
 
-    void Apply() const
+    Vector2 WorldToScreen(const Vector2& world) const
     {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(Left.ToFloating<float>(), Right.ToFloating<float>(), Bottom.ToFloating<float>(), Top.ToFloating<float>(), -1.0f, 1.0f); //2D, so near/far planes are -1, 1
-        glMatrixMode(GL_MODELVIEW);
+        return Vector2((world.X - Left) * ScaleX, (world.Y - Top) * ScaleY);
+    }
+
+    SDL_FPoint WorldToScreen(const  SDL_FPoint world) const
+    {
+        return SDL_FPoint {(world.x - Left.ToFloating<float>()) * ScaleX.ToFloating<float>(), (world.y - Top.ToFloating<float>()) * ScaleY.ToFloating<float>() };
     }
 
     void SetPosition(Vector2 position)
@@ -44,11 +48,13 @@ struct Camera
     void SetX(Fixed16_16 x)
     {
         Position.X = x;
+        UpdateView();
     }
 
     void SetY(Fixed16_16 y)
     {
         Position.Y = y;
+        UpdateView();
     }
 
     void Move(Vector2 amount)
@@ -115,9 +121,14 @@ private:
         Fixed16_16 halfWidth = Width / Fixed16_16(2) / ZoomLevel;
         Fixed16_16 halfHeight = Height / Fixed16_16(2) / ZoomLevel;
 
-        Left = Position.X - halfWidth;
-        Right = Position.X + halfWidth;
+        //Horizontal axis is flipped?
+        Left = -Position.X - halfWidth;
+        Right = -Position.X + halfWidth;
         Bottom = Position.Y - halfHeight;
         Top = Position.Y + halfHeight;
+
+        //Cache values
+        ScaleX = Width / (Right - Left);
+        ScaleY = Height / (Bottom - Top);
     }
 };

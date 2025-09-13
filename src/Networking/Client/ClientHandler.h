@@ -6,7 +6,6 @@
 #include "../../Math/Stream.h"
 #include "../../Game/Input/InputCollection.h"
 #include "../../ECS/ECSSettings.h"
-#include "../../Game/GameSettings.h"
 #include "../../Game/Worlds/PhysicsWorld.h"
 
 #include <memory>

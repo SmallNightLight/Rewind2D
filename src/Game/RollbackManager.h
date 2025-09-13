@@ -4,13 +4,21 @@
 #include "../ECS/ECSSettings.h"
 #include "../ECS/ECS.h"
 
-class WorldManager
+class RollbackManager
 {
 public:
-    WorldManager() :
+    RollbackManager() :
         BaseLayer(PhysicsLayer()), ConfirmedLayer(PhysicsLayer()),
         BasePhysicsWorldData(1, 12), ConfirmedPhysicsWorldData(1, 0),
         BasePhysicsWorld(BaseLayer, BasePhysicsWorldData) { }
+
+    void Initialize(SDL_Renderer* renderer, CacheManager* cacheManager)
+    {
+        BasePhysicsWorld.Initialize(renderer);
+
+        //Setup cache
+        GetPhysicsWorld().InitializeCache(cacheManager);
+    }
 
     void NextFrame(FrameNumber confirmedFrame)
     {
@@ -23,7 +31,7 @@ public:
     }
 
     //Rollback the amount of specified frames from the current frame
-    int32_t Restore()
+    FrameNumber Restore()
     {
         FrameNumber currentFrame = BasePhysicsWorld.GetCurrentFrame();
 

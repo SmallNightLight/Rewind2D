@@ -1,9 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <GLFW/glfw3.h>
-
 #include "Input.h"
+
+#include <SDL3/SDL.h>
+#include <vector>
 
 class InputManager
 {
@@ -11,6 +11,13 @@ public:
     InputManager()
     {
 
+    }
+
+    void Callback(SDL_Event* event)
+    {
+        if (event->key.repeat) return;  //Only for typing text
+
+        event->key
     }
 
     static void RegisterInput(Input* input)

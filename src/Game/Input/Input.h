@@ -8,7 +8,6 @@
 #include <array>
 #include <vector>
 #include <cstdint>
-#include <GLFW/glfw3.h>
 
 static constexpr uint16_t keyNull = 255;
 
@@ -16,9 +15,9 @@ class InputManager;
 
 struct Input
 {
-    Input() { }
+    Input() = default;
 
-    Input(const std::vector<uint16_t>& inputKeys)
+    explicit Input(const std::vector<uint16_t>& inputKeys)
     {
         RegisterInput();
 
@@ -78,8 +77,8 @@ struct Input
     //Mouse position methods
     Vector2 GetMousePosition(const Camera& camera) const
     {
-        Fixed16_16 normalizedX = (mouseX) / Fixed16_16(SCREEN_WIDTH);
-        Fixed16_16 normalizedY = (Fixed16_16(SCREEN_HEIGHT) - mouseY) / Fixed16_16(SCREEN_HEIGHT);
+        Fixed16_16 normalizedX = (mouseX) / Fixed16_16(s_ScreenWidth);
+        Fixed16_16 normalizedY = (Fixed16_16(s_ScreenHeight) - mouseY) / Fixed16_16(s_ScreenHeight);
 
         Fixed16_16 worldX = camera.Left + normalizedX * (camera.Right - camera.Left);
         Fixed16_16 worldY = camera.Bottom + normalizedY * (camera.Top - camera.Bottom);
@@ -115,5 +114,5 @@ public:
     std::vector<bool> LastInput { };
     Fixed16_16 mouseX = Fixed16_16(0), mouseY = Fixed16_16(0);
 
-    std::array<uint8_t, GLFW_KEY_LAST + 1> keyIndexes { };
+    std::array<uint8_t, 0 + 1> keyIndexes { }; //todo
 };
