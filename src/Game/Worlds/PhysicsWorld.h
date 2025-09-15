@@ -6,7 +6,7 @@
 #include "../CacheManager.h"
 #include "../../Rendering/Camera.h"
 #include "../../Physics/Physics.h"
-#include "../Input/Action.h"
+#include "../../Common/Action/Action.h"
 #include "PhysicsWorldData.h"
 
 #include <vector>
@@ -165,7 +165,7 @@ public:
         // }
     }
 
-    void Render(SDL_Renderer* renderer, Action* action)
+    void Render(Action* action)
     {
         Vector2 movement = Vector2(0, 0);
         Fixed16_16 speed = Fixed16_16(0, 5);

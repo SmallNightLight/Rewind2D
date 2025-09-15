@@ -16,6 +16,6 @@ enum PacketType
     NewClientPacket,
     RequestGameDataPacket,
     GameDataPacket,
-    RequestInputPacket, //For resending input packet, input send by default
-    InputPacket
+    RequestActionPacket, //For resending input packet, input send by default
+    ActionPacket
 };

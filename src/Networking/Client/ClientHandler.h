@@ -4,7 +4,7 @@
 #include "../Shared/Packet.h"
 
 #include "../../Math/Stream.h"
-#include "../../Game/Input/InputCollection.h"
+#include "../../Common/Action/ActionCollection.h"
 #include "../../ECS/ECSSettings.h"
 #include "../../Game/Worlds/PhysicsWorld.h"
 
@@ -23,7 +23,7 @@
 class ClientHandler
 {
 public:
-    ClientHandler(const std::string& serverIP, const std::string& serverPort) : client(serverIP, serverPort), running(false), receivedClientID(0), connected(false), sendGameData(false) { }
+    ClientHandler(const std::string& serverIP, const std::string& serverPort) : client(serverIP, serverPort), receivedClientID(0), running(false), connected(false), sendGameData(false) { }
 
     ~ClientHandler()
     {
@@ -112,20 +112,21 @@ public:
                 case GameDataPacket:  //Deserialize the game data
                 {
                     physicsWorld.Deserialize(packet.Data);
-                    clientInputs.at(receivedClientID).JumpToFrame(physicsWorld.GetCurrentFrame());
+                    m_ClientActions.at(receivedClientID).JumpToFrame(physicsWorld.GetCurrentFrame());
                     Debug("Deserialized the game data");
                     newGameData = true;
                     break;
                 }
-                case RequestInputPacket: //Resend an input packet
+                case RequestActionPacket: //Resend an action packet
                 {
-                    Warning("RequestInputPacket not implemented");
+                    Warning("RequestActionPacket not implemented");
                     break;
                 }
-                case InputPacket: //Deserialize the input packet from other clients
+                case ActionPacket: //Deserialize the action packet from other clients
                 {
-                    InputData inputData = InputData(std::move(packet.Data));
-                    UpdateInput(packet.ID, inputData);
+                    Action action = Action();
+                    action.Deserialize(std::move(packet.Data));
+                    UpdateAction(packet.ID, action);
                     break;
                 }
                 default:
@@ -157,39 +158,39 @@ public:
         sendGameData = false;
     }
 
-    void UpdateInput(ClientID clientID, const InputData& inputData)
+    void UpdateAction(ClientID clientID, const Action& action)
     {
-        if (!clientInputs.contains(clientID)) return;
+        if (!m_ClientActions.contains(clientID)) return;
 
-        clientInputs.at(clientID).AddInput(inputData);
+        m_ClientActions.at(clientID).AddAction(action);
     }
 
-    void SendInput(InputData& inputData)
+    void SendAction(Action& action)
     {
         if (receivedClientID == 0) return;
 
         Stream stream = Stream();
-        inputData.Serialize(stream);
-        Packet packet(receivedClientID, InputPacket, inputData.Frame, std::move(stream));
+        action.Serialize(stream);
+        Packet packet(receivedClientID, ActionPacket, action.Frame, std::move(stream));
         Send(packet);
     }
 
     void AddClient(ClientID clientID, uint32_t frame)
     {
-        if (clientInputs.contains(clientID))
+        if (m_ClientActions.contains(clientID))
         {
             Warning("Can not add a client that already exists");
             return;
         }
 
         clientIDs.insert(clientID);
-        clientInputs.emplace(clientID, InputCollection(playerInputKeys, frame,MaxRollBackFrames * 2));
+        m_ClientActions.emplace(clientID, ActionCollection(frame, MaxRollBackFrames * 2));
 
-        //Add input for the first few frames to avoid missing input
+        //Add actions for the first few frames to avoid missing actions
         for(uint32_t i = frame; i < frame + 5; ++i)
         {
-            InputData input = InputData(i, std::vector<bool>(playerInputKeys.size()), std::vector<bool>(playerInputKeys.size()), 0, 0);
-            clientInputs.at(clientID).AddInput(input);
+            Action action = Action(i);
+            m_ClientActions.at(clientID).AddAction(action);
         }
     }
 
@@ -201,14 +202,14 @@ public:
             return;
         }
 
-        if (!clientInputs.contains(clientID))
+        if (!m_ClientActions.contains(clientID))
         {
             Warning("Can not remove a client that does not exists");
             return;
         }
 
         clientIDs.erase(clientID);
-        clientInputs.erase(clientID);
+        m_ClientActions.erase(clientID);
     }
 
     ClientID GetClientID() const
@@ -221,32 +222,32 @@ public:
         return clientIDs;
     }
 
-    Input* GetClientInput(ClientID clientID, uint32_t frame)
+    Action GetClientAction(ClientID clientID, uint32_t frame)
     {
-        if (!clientInputs.contains(clientID))
+        if (!m_ClientActions.contains(clientID))
         {
             throw std::invalid_argument("clientID not found");
         }
 
-        InputCollection& inputCollection= clientInputs.at(clientID);
+        ActionCollection& actionCollection= m_ClientActions.at(clientID);
 
-        if (inputCollection.NeedsPrediction(frame))
+        if (actionCollection.NeedsPrediction(frame))
         {
-            return &inputCollection.GetPredictedInput(frame);
+            return actionCollection.GetPredictedAction(frame);
         }
 
-        return &inputCollection.GetInput(frame);
+        return actionCollection.GetAction(frame);
     }
 
-    std::vector<Input*> GetAllClientInputs(uint32_t frame)
+    std::vector<Action> GetAllClientActions(uint32_t frame)
     {
         std::set<ClientID> clientIDSet = GetAllClientIDs();
-        std::vector<Input*> result(clientIDSet.size());
+        std::vector<Action> result(clientIDSet.size());
 
         int i = 0;
         for (ClientID clientID : clientIDSet)
         {
-            result[i] = GetClientInput(clientID, frame);
+            result[i] = GetClientAction(clientID, frame);
             ++i;
         }
 
@@ -266,9 +267,9 @@ public:
     {
         uint32_t lastConfirmedFrame = std::numeric_limits<uint32_t>::max();
 
-        for (auto clientInput : clientInputs)
+        for (const auto& clientAction : m_ClientActions)
         {
-            uint32_t lastCompletedFrame = clientInput.second.GetLastCompletedFrame();
+            uint32_t lastCompletedFrame = clientAction.second.GetLastCompletedFrame();
 
             if (lastCompletedFrame < lastConfirmedFrame)
             {
@@ -338,7 +339,7 @@ private:
     std::unordered_map<ClientID, uint32_t> clientsWaitingToJoin;
 
     std::set<ClientID> clientIDs { };
-    std::unordered_map<ClientID, InputCollection> clientInputs;
+    std::unordered_map<ClientID, ActionCollection> m_ClientActions;
 
     bool connected;
     bool sendGameData;

@@ -2,7 +2,7 @@
 
 #include "../Shared/NetworkingSettings.h"
 #include "../Shared/ThreadedQueue.h"
-#include "../Shared/Log.h"
+#include "../../Common/Log.h"
 
 #include <string>
 #include <array>

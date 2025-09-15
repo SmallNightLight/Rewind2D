@@ -10,30 +10,36 @@ static constexpr ActionKey s_InvalidActionKey = 255;
 class ActionManager
 {
 public:
-    ActionManager() : NextAction(0)
+    ActionManager() : m_NextAction(0)
     {
-        ActionCodes.fill(s_InvalidActionKey);
+        m_ActionCodes.fill(s_InvalidActionKey);
     }
 
     inline ActionKey RegisterAction(SDL_Scancode scanCode)
     {
-        ActionCodes[scanCode] = NextAction;
-        return ++NextAction;
+        m_ActionCodes[scanCode] = m_NextAction;
+        return ++m_NextAction;
     }
 
     inline bool HasActionKey(SDL_Scancode scanCode) const
     {
-        return ActionCodes[scanCode] != s_InvalidActionKey;
+        return m_ActionCodes[scanCode] != s_InvalidActionKey;
     }
 
     inline bool TryGetActionKey(SDL_Scancode scanCode, ActionKey& outActionKey) const
     {
         if (!HasActionKey(scanCode)) return false;
 
-        outActionKey = ActionCodes[scanCode];
+        outActionKey = m_ActionCodes[scanCode];
         return true; //Todo: add more complex input logic like multiple keys for 1 action
     }
 
-    ActionKey NextAction;
-    std::array<ActionKey, SDL_Scancode::SDL_SCANCODE_COUNT> ActionCodes { };
+    inline ActionKey GetActionCount() const
+    {
+        return m_NextAction;
+    }
+
+private:
+    ActionKey m_NextAction;
+    std::array<ActionKey, SDL_Scancode::SDL_SCANCODE_COUNT> m_ActionCodes { };
 };

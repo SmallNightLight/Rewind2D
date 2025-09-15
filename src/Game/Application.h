@@ -4,18 +4,18 @@
 #include "../Math/FixedTypes.h"
 #include "../Physics/Physics.h"
 #include "RollbackManager.h"
-#include "Input/ActionManager.h"
+#include "../Networking/Client/ClientHandler.h"
+#include "../Common/Action/Action.h"
+#include "../Common/Action/ActionManager.h"
 #include "CacheManager.h"
 
 #include <SDL3/SDL.h>
 #include <thread>
 
-#include "Input/Action.h"
-
 class Application
 {
 public:
-    Application() : m_Window(nullptr), m_Renderer(nullptr), m_Paused(false), m_LastTick(0), m_Accumulator(0) { }
+    Application() : m_ClientHandler(ClientHandler("localhost", "50000")), m_Window(nullptr), m_Renderer(nullptr), m_Paused(false), m_LastTick(0), m_Accumulator(0) { }
 
     void Initialize(SDL_Window* window, SDL_Renderer* renderer)
     {
@@ -25,6 +25,7 @@ public:
         cacheManager = CacheManager();
         rollbackManager.Initialize(renderer, &cacheManager);
         m_PlayerAction.Initialize(&m_ActionManager);
+        m_SecondaryAction.Initialize(&m_ActionManager);
         Temp();
 
         m_Paused = false;
@@ -182,13 +183,15 @@ int fgbewrhiuo;
         SDL_RenderClear(m_Renderer);
 
         //Render entities
-        rollbackManager.GetPhysicsWorld().Render(m_Renderer, &m_PlayerAction);
+        rollbackManager.GetPhysicsWorld().Render(&m_PlayerAction);
 
         //Switch render frame
         SDL_RenderPresent(m_Renderer);
     }
 
 private:
+    ClientHandler m_ClientHandler;
+
     SDL_Window* m_Window;
     SDL_Renderer* m_Renderer;
 
@@ -196,6 +199,7 @@ private:
     CacheManager cacheManager;
     ActionManager m_ActionManager;
     Action m_PlayerAction;
+    Action m_SecondaryAction;
 
     bool m_Paused;
     Uint64 m_LastTick;

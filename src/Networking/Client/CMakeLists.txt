@@ -13,17 +13,15 @@ add_executable(Client main.cpp
         ../Shared/Packet.h
         ../Shared/ThreadedQueue.h
         ../Shared/NetworkingSettings.h
-        ../Shared/Log.h
-
-        ../../Game/Input/Input.h
 )
 
 if(TARGET CLIENT)
+    add_subdirectory(../../Common)
     add_subdirectory(../../Math)
 endif()
 
 #ASIO
-target_include_directories(Client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/asio/asio/include)
+target_include_directories(Client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../../extern/asio/asio/include)
 find_package(Threads REQUIRED)
-target_link_libraries(Client PRIVATE Threads::Threads)
-target_compile_definitions(Client PRIVATE ASIO_STANDALONE)
+target_link_libraries(Client PUBLIC Threads::Threads)
+target_compile_definitions(Client PUBLIC ASIO_STANDALONE)
