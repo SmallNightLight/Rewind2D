@@ -16,18 +16,18 @@ struct Camera
 
     inline Camera() noexcept = default;
 
-    constexpr inline explicit Camera(Fixed16_16 width, Fixed16_16 height, Fixed16_16 zoomLevel = Fixed16_16(1))
-        : Width(width), Height(height), ZoomLevel(zoomLevel), Position(0, 0), Left(0), Right(0), Bottom(0), Top(0), ScaleX(0), ScaleY(0)
+    constexpr inline explicit Camera(int width, int height, Fixed16_16 zoomLevel = Fixed16_16(1))
+        : Width(Fixed16_16(width)), Height(Fixed16_16(height)), ZoomLevel(zoomLevel), Position(0, 0), Left(0), Right(0), Bottom(0), Top(0), ScaleX(0), ScaleY(0)
     {
         UpdateView();
     }
 
-    Vector2 WorldToScreen(const Vector2& world) const
+    [[nodiscard]] Vector2 WorldToScreen(const Vector2& world) const
     {
         return Vector2((world.X - Left) * ScaleX, (world.Y - Top) * ScaleY);
     }
 
-    SDL_FPoint WorldToScreen(const  SDL_FPoint world) const
+    [[nodiscard]] SDL_FPoint WorldToScreen(const  SDL_FPoint world) const
     {
         return SDL_FPoint {(world.x - Left.ToFloating<float>()) * ScaleX.ToFloating<float>(), (world.y - Top.ToFloating<float>()) * ScaleY.ToFloating<float>() };
     }

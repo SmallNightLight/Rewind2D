@@ -9,7 +9,7 @@ endif()
 add_executable(Server main.cpp
         Server.h
 
-        ../Shared/Log.h
+        ../../Common/Log.h
         ../Shared/Packet.h
         ../Shared/ThreadedQueue.h
         ../Shared/NetworkingSettings.h

@@ -23,7 +23,7 @@ public:
         m_Renderer = renderer;
 
         cacheManager = CacheManager();
-        rollbackManager.Initialize(renderer, &cacheManager);
+        rollbackManager.Initialize(renderer, &m_PlayerAction, &cacheManager);
         m_PlayerAction.Initialize(&m_ActionManager);
         m_SecondaryAction.Initialize(&m_ActionManager);
         Temp();
@@ -183,7 +183,7 @@ int fgbewrhiuo;
         SDL_RenderClear(m_Renderer);
 
         //Render entities
-        rollbackManager.GetPhysicsWorld().Render(&m_PlayerAction);
+        rollbackManager.GetPhysicsWorld().Render();
 
         //Switch render frame
         SDL_RenderPresent(m_Renderer);

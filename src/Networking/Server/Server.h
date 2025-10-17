@@ -3,7 +3,7 @@
 #include "../Shared/Packet.h"
 #include "../Shared/ThreadedQueue.h"
 #include "../Shared/NetworkingSettings.h"
-#include "../Shared/Log.h"
+#include "../../Common/Log.h"
 #include "../../Math/Stream.h"
 
 #include <vector>
@@ -160,12 +160,12 @@ private:
                                 clientsWaitingForGameData.clear();
                                 break;
                             }
-                            case RequestInputPacket: //Resend an input packet
+                            case RequestActionPacket: //Resend an input packet
                             {
-                                Warning("RequestInputPacket not implemented");
+                                Warning("RequestActionPacket not implemented");
                                 break;
                             }
-                            case InputPacket: //Continue the input packet to other clients
+                            case ActionPacket: //Continue the input packet to other clients
                             {
                                 //Update information on the frame
                                 if (ClientCurrentFrames.contains(clientID) &&  ClientCurrentFrames.at(clientID) < packet.Frame)

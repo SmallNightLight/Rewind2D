@@ -25,13 +25,15 @@ public:
         InitializeCamera();
     }
 
-    void Initialize(SDL_Renderer* renderer)
+    void Initialize(SDL_Renderer* renderer, Action* action, CacheManager* cacheManager)
     {
         m_Renderer = renderer;
+        m_Action = action;
+        rigidBodySystem->InitializeCache(cacheManager->GetCollisionCache(), &physicsWorldData.Cache);
     }
 
     ///Registers all components to the layer, sets the component collections and creates a signature which includes all components
-    void SetupComponents(PhysicsLayer& layer) //TODO: use GetSystem()
+    void SetupComponents(PhysicsLayer& layer)
     {
         transformCollection = layer.GetComponentCollection<Transform>();
         transformMetaCollection = layer.GetComponentCollection<TransformMeta>();
@@ -63,14 +65,9 @@ public:
         movingSystem = layer.GetSystem<MovingSystem>();
     }
 
-    void InitializeCache(CacheManager* cache)
-    {
-        rigidBodySystem->InitializeCache(cache->GetCollisionCache(), &physicsWorldData.Cache);
-    }
-
     void InitializeCamera()
     {
-        camera = Camera(static_cast<Fixed16_16>(s_ScreenWidth), static_cast<Fixed16_16>(s_ScreenHeight), Fixed16_16(20));
+        camera = Camera(s_ScreenWidth, s_ScreenHeight, Fixed16_16(20));
     }
 
     void AddObjects()
@@ -141,7 +138,7 @@ public:
         ++physicsWorldData.CurrentFrame;
     }
 
-    void UpdateDebug(std::vector<Input*>& inputs)
+    void UpdateDebug()
     {
         // for (Input* input : inputs)
         // {
@@ -165,24 +162,25 @@ public:
         // }
     }
 
-    void Render(Action* action)
+    void Render()
     {
+        // Handle camera input
         Vector2 movement = Vector2(0, 0);
         Fixed16_16 speed = Fixed16_16(0, 5);
 
-        if (action->GetKey(0))
+        if (m_Action->GetKey(0))
         {
             movement += Vector2(0, 1);
         }
-        if (action->GetKey(1))
+        if (m_Action->GetKey(1))
         {
             movement += Vector2(0, -1);
         }
-        if (action->GetKey(2))
+        if (m_Action->GetKey(2))
         {
             movement += Vector2(1, 0);
         }
-        if (action->GetKey(3))
+        if (m_Action->GetKey(3))
         {
             movement += Vector2(-1, 0);
         }
@@ -190,6 +188,7 @@ public:
         movement = movement.Normalize();
         camera.Move(movement * speed);
 
+        // Render entities
         circleColliderRenderer->Render(m_Renderer, camera);
         boxColliderRenderer->Render(m_Renderer, camera);
         polygonColliderRenderer->Render(m_Renderer, camera);
@@ -513,6 +512,7 @@ private:
     PhysicsLayer& baseLayer;
     PhysicsWorldData& physicsWorldData;
     SDL_Renderer* m_Renderer;
+    Action* m_Action;
 
     //Systems
     RigidBody* rigidBodySystem;

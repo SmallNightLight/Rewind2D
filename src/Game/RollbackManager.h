@@ -12,12 +12,9 @@ public:
         BasePhysicsWorldData(1, 12), ConfirmedPhysicsWorldData(1, 0),
         BasePhysicsWorld(BaseLayer, BasePhysicsWorldData) { }
 
-    void Initialize(SDL_Renderer* renderer, CacheManager* cacheManager)
+    void Initialize(SDL_Renderer* renderer, Action* action, CacheManager* cacheManager)
     {
-        BasePhysicsWorld.Initialize(renderer);
-
-        //Setup cache
-        GetPhysicsWorld().InitializeCache(cacheManager);
+        BasePhysicsWorld.Initialize(renderer, action, cacheManager);
     }
 
     void NextFrame(FrameNumber confirmedFrame)
