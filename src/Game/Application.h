@@ -37,12 +37,12 @@ public:
 
     void Temp()
     {
-        m_ActionManager.RegisterAction(SDL_SCANCODE_W);
-        m_ActionManager.RegisterAction(SDL_SCANCODE_S);
-        m_ActionManager.RegisterAction(SDL_SCANCODE_A);
-        m_ActionManager.RegisterAction(SDL_SCANCODE_D);
-        m_ActionManager.RegisterAction(SDL_SCANCODE_Q);
-        m_ActionManager.RegisterAction(SDL_SCANCODE_E);
+        m_ActionManager.RegisterKeyAction(SDL_SCANCODE_W);
+        m_ActionManager.RegisterKeyAction(SDL_SCANCODE_S);
+        m_ActionManager.RegisterKeyAction(SDL_SCANCODE_A);
+        m_ActionManager.RegisterKeyAction(SDL_SCANCODE_D);
+        m_ActionManager.RegisterKeyAction(SDL_SCANCODE_Q);
+        m_ActionManager.RegisterKeyAction(SDL_SCANCODE_E);
     }
 
     void AddObjects()
@@ -89,7 +89,20 @@ public:
             Uint64 sleepDuration = deltaNS - elapsedFrameTime;
             std::this_thread::sleep_for(std::chrono::nanoseconds(sleepDuration));
         }
+
+        static Uint64 lastTitleUpdate = SDL_GetTicksNS();
+        Uint64 now = SDL_GetTicksNS();
+
+        if (now - lastTitleUpdate >= 500'000'000)
+        {
+            char title[128];
+            snprintf(title, sizeof(title), "Rewind2D - Frame: %.3f ms", static_cast<double>(elapsedFrameTime) / 1'000'000.0);
+            SDL_SetWindowTitle(m_Window, title);
+
+            lastTitleUpdate = now;
+        }
     }
+
 int fgbewrhiuo;
     void Step()
     {
@@ -102,6 +115,7 @@ int fgbewrhiuo;
         //std::vector<Input*> inputs = clientHandler.GetAllClientInputs(currentFrame);
         basePhysicsWorld.Update(fixedDelta);
         //clientHandler.SendGameData(basePhysicsWorld);
+        m_PlayerAction.Update();
     }
 
     // void Step()

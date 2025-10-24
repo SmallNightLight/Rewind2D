@@ -67,17 +67,17 @@ public:
 
     void InitializeCamera()
     {
-        camera = Camera(s_ScreenWidth, s_ScreenHeight, Fixed16_16(20));
+        m_Camera = Camera(s_ScreenWidth, s_ScreenHeight, Fixed16_16(20));
     }
 
     void AddObjects()
     {
         //Add a ground
-        PhysicsUtils::CreateBox(baseLayer, Vector2(Fixed16_16(0), camera.Bottom), camera.Right - camera.Left + Fixed16_16(10), Fixed16_16(2), Static);
+        PhysicsUtils::CreateBox(baseLayer, Vector2(Fixed16_16(0), m_Camera.Bottom), m_Camera.Right - m_Camera.Left + Fixed16_16(10), Fixed16_16(2), Static);
 
         //Add walls
-        PhysicsUtils::CreateBox(baseLayer, Vector2(camera.Left, Fixed16_16(0)), Fixed16_16(2), Fixed16_16(50), Static);
-        PhysicsUtils::CreateBox(baseLayer, Vector2(camera.Right, Fixed16_16(0)), Fixed16_16(2), Fixed16_16(50), Static);
+        PhysicsUtils::CreateBox(baseLayer, Vector2(m_Camera.Left, Fixed16_16(0)), Fixed16_16(2), Fixed16_16(50), Static);
+        PhysicsUtils::CreateBox(baseLayer, Vector2(m_Camera.Right, Fixed16_16(0)), Fixed16_16(2), Fixed16_16(50), Static);
 
         //Create rotated objects
         Entity e1 = PhysicsUtils::CreateBox(baseLayer, Vector2(10, 10), Fixed16_16(25), Fixed16_16(1), Static);
@@ -88,7 +88,7 @@ public:
 
         for (int i = 0; i < 15; ++i)
         {
-            PhysicsUtils::CreateRandomCircle(baseLayer, physicsWorldData.NumberGenerator, camera.Left, camera.Right, camera.Bottom, camera.Top);
+            PhysicsUtils::CreateRandomCircle(baseLayer, physicsWorldData.NumberGenerator, m_Camera.Left, m_Camera.Right, m_Camera.Bottom, m_Camera.Top);
         }
 
         baseLayer.AddComponent(10, Movable(Fixed16_16(20)));
@@ -96,12 +96,12 @@ public:
         //Add boxes/
         for (int i = 0; i < 15; ++i)
         {
-            PhysicsUtils::CreateRandomBox(baseLayer, physicsWorldData.NumberGenerator, camera.Left, camera.Right, camera.Bottom, camera.Top);
+            PhysicsUtils::CreateRandomBox(baseLayer, physicsWorldData.NumberGenerator, m_Camera.Left, m_Camera.Right, m_Camera.Bottom, m_Camera.Top);
         }
 
         for (int i = 0; i < 15; ++i)
         {
-            PhysicsUtils::CreateRandomPolygon(baseLayer, physicsWorldData.NumberGenerator, camera.Left, camera.Right, camera.Bottom, camera.Top);
+            PhysicsUtils::CreateRandomPolygon(baseLayer, physicsWorldData.NumberGenerator, m_Camera.Left, m_Camera.Right, m_Camera.Bottom, m_Camera.Top);
         }
     }
 
@@ -118,10 +118,8 @@ public:
 
     void Update(Fixed16_16 deltaTime)
     {
-        //UpdateDebug(inputs);
-
-        //Input* playerInput = inputs[0];
-        //movingSystem->Update(deltaTime, playerInput->GetKey(GLFW_KEY_W), playerInput->GetKey(GLFW_KEY_S), playerInput->GetKey(GLFW_KEY_A), playerInput->GetKey(GLFW_KEY_D), playerInput->GetKey(GLFW_KEY_Q), playerInput->GetKey(GLFW_KEY_E));
+        UpdateDebug();
+        //movingSystem->Update(deltaTime);
 
         rigidBodySystem->HandleCollisions(physicsWorldData.CurrentFrame);
         rigidBodySystem->IntegrateForces(deltaTime);
@@ -140,26 +138,26 @@ public:
 
     void UpdateDebug()
     {
-        // for (Input* input : inputs)
-        // {
-        //     if (input->GetKeyDown(GLFW_MOUSE_BUTTON_LEFT))
-        //     {
-        //         PhysicsUtils::CreateRandomCircleFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
-        //         std::cout << "Create new circle\n";
-        //     }
-        //
-        //     if (input->GetKeyDown(GLFW_MOUSE_BUTTON_RIGHT))
-        //     {
-        //         PhysicsUtils::CreateRandomBoxFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
-        //         std::cout << "Create new box\n";
-        //     }
-        //
-        //     if (input->GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
-        //     {
-        //         PhysicsUtils::CreateRandomPolygonFromPosition(baseLayer, physicsWorldData.NumberGenerator, input->GetMousePosition(camera));
-        //         std::cout << "Create new convex\n";
-        //     }
-        // }
+        if (m_Action->GetMouseButtonDown(1))
+        {
+            Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(m_Action->GetMousePosition());
+            PhysicsUtils::CreateRandomCircleFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
+            std::cout << "Create new circle\n";
+        }
+
+        if (m_Action->GetMouseButtonDown(3))
+        {
+            Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(m_Action->GetMousePosition());
+            PhysicsUtils::CreateRandomBoxFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
+            std::cout << "Create new box\n";
+        }
+
+        if (m_Action->GetMouseButtonDown(2))
+        {
+            Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(m_Action->GetMousePosition());
+            PhysicsUtils::CreateRandomPolygonFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
+            std::cout << "Create new convex\n";
+        }
     }
 
     void Render()
@@ -168,30 +166,30 @@ public:
         Vector2 movement = Vector2(0, 0);
         Fixed16_16 speed = Fixed16_16(0, 5);
 
-        if (m_Action->GetKey(0))
+        if (m_Action->GetKey(SDL_SCANCODE_W))
         {
             movement += Vector2(0, 1);
         }
-        if (m_Action->GetKey(1))
+        if (m_Action->GetKey(SDL_SCANCODE_S))
         {
             movement += Vector2(0, -1);
         }
-        if (m_Action->GetKey(2))
+        if (m_Action->GetKey(SDL_SCANCODE_A))
         {
             movement += Vector2(1, 0);
         }
-        if (m_Action->GetKey(3))
+        if (m_Action->GetKey(SDL_SCANCODE_D))
         {
             movement += Vector2(-1, 0);
         }
 
         movement = movement.Normalize();
-        camera.Move(movement * speed);
+        m_Camera.Move(movement * speed);
 
         // Render entities
-        circleColliderRenderer->Render(m_Renderer, camera);
-        boxColliderRenderer->Render(m_Renderer, camera);
-        polygonColliderRenderer->Render(m_Renderer, camera);
+        circleColliderRenderer->Render(m_Renderer, m_Camera);
+        boxColliderRenderer->Render(m_Renderer, m_Camera);
+        polygonColliderRenderer->Render(m_Renderer, m_Camera);
 
         //Debug
         if (PhysicsDebugMode)
@@ -489,9 +487,11 @@ private:
             {
                 Contact& contact = contactPair.Contacts[i];
 
-                float px = contact.Position.X.ToFloating<float>();
-                float py = contact.Position.Y.ToFloating<float>();
-                float normalLength = -contact.Separation.ToFloating<float>() * 20;
+                Vector2 screenPosition = m_Camera.WorldToScreen(contact.Position);
+
+                float px = screenPosition.X.ToFloating<float>();
+                float py = screenPosition.Y.ToFloating<float>();
+                constexpr float normalLength = 10.0f;
                 float nx = contactPair.Normal.X.ToFloating<float>() * normalLength;
                 float ny = contactPair.Normal.Y.ToFloating<float>() * normalLength;
 
@@ -500,7 +500,7 @@ private:
                 SDL_RenderLine(m_Renderer, px, py, px + nx, py + ny);
 
                 //Render contact point
-                constexpr float size = 0.4f;
+                constexpr float size = 5.0f;
                 SDL_SetRenderDrawColor(m_Renderer, 128, 128, 128, 255);
                 SDL_RenderLine(m_Renderer, px - size, py - size, px + size, py + size);
                 SDL_RenderLine(m_Renderer, px + size, py - size, px - size, py + size);
@@ -533,5 +533,5 @@ private:
 
     PhysicsSignature includedComponents;
 
-    Camera camera;
+    Camera m_Camera;
 };

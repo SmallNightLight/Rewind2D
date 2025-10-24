@@ -12,26 +12,52 @@ class ActionManager
 public:
     ActionManager() : m_NextAction(0)
     {
-        m_ActionCodes.fill(s_InvalidActionKey);
+        m_KeyActionCodes.fill(s_InvalidActionKey);
+        m_MouseActionCodes.fill(s_InvalidActionKey);
+
+        // Register by default mouse buttons
+        for (int i = 1; i < 6; ++i)
+        {
+            RegisterMouseAction(i);
+        }
     }
 
-    inline ActionKey RegisterAction(SDL_Scancode scanCode)
+    inline ActionKey RegisterKeyAction(SDL_Scancode scanCode)
     {
-        m_ActionCodes[scanCode] = m_NextAction;
+        m_KeyActionCodes[scanCode] = m_NextAction;
         return ++m_NextAction;
     }
 
-    inline bool HasActionKey(SDL_Scancode scanCode) const
+    inline ActionKey RegisterMouseAction(u_int8_t mouseButton)
     {
-        return m_ActionCodes[scanCode] != s_InvalidActionKey;
+        m_MouseActionCodes[mouseButton] = m_NextAction;
+        return ++m_NextAction;
     }
 
-    inline bool TryGetActionKey(SDL_Scancode scanCode, ActionKey& outActionKey) const
+    inline bool HasKeyAction(SDL_Scancode scanCode) const
     {
-        if (!HasActionKey(scanCode)) return false;
+        return m_KeyActionCodes[scanCode] != s_InvalidActionKey;
+    }
 
-        outActionKey = m_ActionCodes[scanCode];
+    inline bool TryGetKeyAction(SDL_Scancode scanCode, ActionKey& outActionKey) const
+    {
+        if (!HasKeyAction(scanCode)) return false;
+
+        outActionKey = m_KeyActionCodes[scanCode];
         return true; //Todo: add more complex input logic like multiple keys for 1 action
+    }
+
+    inline bool HasMouseAction(uint mouseButton) const
+    {
+        return m_MouseActionCodes[mouseButton] != s_InvalidActionKey;
+    }
+
+    inline bool TryGetMouseAction(uint mouseButton, ActionKey& outActionKey) const
+    {
+        if (!HasMouseAction(mouseButton)) return false;
+
+        outActionKey = m_MouseActionCodes[mouseButton];
+        return true;
     }
 
     inline ActionKey GetActionCount() const
@@ -41,5 +67,6 @@ public:
 
 private:
     ActionKey m_NextAction;
-    std::array<ActionKey, SDL_Scancode::SDL_SCANCODE_COUNT> m_ActionCodes { };
+    std::array<ActionKey, SDL_Scancode::SDL_SCANCODE_COUNT> m_KeyActionCodes { };
+    std::array<ActionKey, 256> m_MouseActionCodes { };
 };

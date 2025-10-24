@@ -53,27 +53,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
-     static Uint64 lastTime = SDL_GetTicks();
-     static Uint64 frameCount = 0;
-     static double fps = 0.0;
-
-    Uint64 now = SDL_GetTicks();
-    double delta = (now - lastTime) / 1000.0; // seconds
-    frameCount++;
-
-    // Update FPS every second
-    if (delta >= 1.0)
-    {
-        fps = frameCount / delta;
-        frameCount = 0;
-        lastTime = now;
-
-        SDL_Log("FPS: %.2f", fps);
-    }
-
-    //SDL_Log("Application");
     application.Update();
-
     return SDL_APP_CONTINUE;
 }
 

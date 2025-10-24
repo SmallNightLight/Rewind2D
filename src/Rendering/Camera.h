@@ -27,9 +27,14 @@ struct Camera
         return Vector2((world.X - Left) * ScaleX, (world.Y - Top) * ScaleY);
     }
 
-    [[nodiscard]] SDL_FPoint WorldToScreen(const  SDL_FPoint world) const
+    [[nodiscard]] SDL_FPoint WorldToScreen(const SDL_FPoint world) const
     {
         return SDL_FPoint {(world.x - Left.ToFloating<float>()) * ScaleX.ToFloating<float>(), (world.y - Top.ToFloating<float>()) * ScaleY.ToFloating<float>() };
+    }
+
+    [[nodiscard]] Vector2 ScreenToWorld(Vector2 screen) const
+    {
+        return Vector2(screen.X / ScaleX + Left, screen.Y / ScaleY + Top);
     }
 
     void SetPosition(Vector2 position)
