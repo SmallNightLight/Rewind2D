@@ -189,7 +189,7 @@ public:
         //Add actions for the first few frames to avoid missing actions
         for(uint32_t i = frame; i < frame + 5; ++i)
         {
-            Action action = Action(i);
+            Action action(i);
             m_ClientActions.at(clientID).AddAction(action);
         }
     }
@@ -241,11 +241,10 @@ public:
 
     std::vector<Action> GetAllClientActions(uint32_t frame)
     {
-        std::set<ClientID> clientIDSet = GetAllClientIDs();
-        std::vector<Action> result(clientIDSet.size());
+        std::vector<Action> result(clientIDs.size());
 
         int i = 0;
-        for (ClientID clientID : clientIDSet)
+        for (ClientID clientID : clientIDs)
         {
             result[i] = GetClientAction(clientID, frame);
             ++i;

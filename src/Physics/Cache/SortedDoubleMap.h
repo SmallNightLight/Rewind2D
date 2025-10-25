@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../../ECS/ECS.h"
-
 #include <array>
 #include <cassert>
 #include <type_traits>
@@ -100,3 +98,5 @@ private:
 
     static_assert(std::is_trivially_default_constructible_v<KeyType>, "Type for sorted cache needs to be trivial");
 };
+
+static_assert(std::is_trivially_default_constructible_v<SortedDoubleMap<int, bool, 1>>, "SortedDoubleMap needs to be trivial");

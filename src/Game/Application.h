@@ -32,6 +32,8 @@ public:
         m_LastTick = SDL_GetTicksNS();
         m_Accumulator = 0;
 
+        m_ClientHandler.Start();
+
         AddObjects();
     }
 
@@ -103,92 +105,95 @@ public:
         }
     }
 
-int fgbewrhiuo;
+// int fgbewrhiuo;
+//     void Step()
+//     {
+//         constexpr Fixed16_16 fixedDelta = Fixed16_16(1) / Fixed16_16(SimulationFPS);
+//         PhysicsWorld& basePhysicsWorld = rollbackManager.GetPhysicsWorld();
+//         FrameNumber currentFrame = basePhysicsWorld.GetCurrentFrame();
+//         FrameNumber lastConfirmedFrame = fgbewrhiuo++;//clientHandler.GetLastConfirmedFrame();
+//
+//         rollbackManager.NextFrame(lastConfirmedFrame);
+//         //std::vector<Input*> inputs = clientHandler.GetAllClientInputs(currentFrame);
+//         basePhysicsWorld.Update(fixedDelta);
+//         //clientHandler.SendGameData(basePhysicsWorld);
+//         m_PlayerAction.Update();
+//     }
+
     void Step()
     {
         constexpr Fixed16_16 fixedDelta = Fixed16_16(1) / Fixed16_16(SimulationFPS);
+
         PhysicsWorld& basePhysicsWorld = rollbackManager.GetPhysicsWorld();
         FrameNumber currentFrame = basePhysicsWorld.GetCurrentFrame();
-        FrameNumber lastConfirmedFrame = fgbewrhiuo++;//clientHandler.GetLastConfirmedFrame();
+
+        //Update the input of this client
+        m_PlayerAction.Frame = currentFrame;
+
+        m_ClientHandler.SendAction(m_PlayerAction);
+        m_ClientHandler.UpdateAction(m_ClientHandler.GetClientID(), m_PlayerAction);
+
+        //Update the input of other clients and handle other packets, deserializing new game state
+        bool newGameData = false;
+        m_ClientHandler.ReadMessages(basePhysicsWorld, newGameData);
+
+        FrameNumber lastConfirmedFrame = m_ClientHandler.GetLastConfirmedFrame();
+
+        if (RollbackDebugMode)
+        {
+            if (currentFrame < MaxRollBackFrames)
+                lastConfirmedFrame = 1;
+            else
+                lastConfirmedFrame = currentFrame - (MaxRollBackFrames - 1);
+        }
+
+        if (lastConfirmedFrame > currentFrame)
+        {
+            //Should only be possible at start
+            lastConfirmedFrame = currentFrame;
+        }
+
+        if (newGameData)
+        {
+            rollbackManager.Reset(); //TODO: With delay frames might still be behind
+            lastConfirmedFrame = currentFrame;
+        }
+        else if (lastConfirmedFrame < currentFrame)
+        {
+            if (currentFrame - lastConfirmedFrame >= MaxRollBackFrames)
+            {
+                std::cout << "Could not rollback " << currentFrame - lastConfirmedFrame << "frames" << std::endl;
+            }
+            else
+            {
+                FrameNumber restoredFrame = rollbackManager.Restore();
+
+                if (lastConfirmedFrame < restoredFrame)
+                {
+                    std::cout << "Could not rollback from frame " << currentFrame << " to frame " << lastConfirmedFrame << std::endl;
+                }
+                else
+                {
+                    FrameNumber rollbackCount = currentFrame - restoredFrame;
+
+                    //ToDo: will always rollback when last confirmed frame is < current frame. Add checking if the received input is equal to the predicted
+
+                    for(FrameNumber i = 0; i < rollbackCount; ++i)
+                    {
+                        rollbackManager.NextFrame(lastConfirmedFrame);
+                        std::vector<Action> actions = m_ClientHandler.GetAllClientActions(basePhysicsWorld.GetCurrentFrame());
+                        basePhysicsWorld.Update(fixedDelta, actions);
+                    }
+                }
+            }
+        }
 
         rollbackManager.NextFrame(lastConfirmedFrame);
-        //std::vector<Input*> inputs = clientHandler.GetAllClientInputs(currentFrame);
-        basePhysicsWorld.Update(fixedDelta);
-        //clientHandler.SendGameData(basePhysicsWorld);
+        std::vector<Action> actions = m_ClientHandler.GetAllClientActions(currentFrame);
+        basePhysicsWorld.Update(fixedDelta, actions);
+        m_ClientHandler.SendGameData(basePhysicsWorld);
         m_PlayerAction.Update();
     }
-
-    // void Step()
-    // {
-    //     constexpr Fixed16_16 fixedDelta = Fixed16_16(1) / Fixed16_16(SimulationFPS);
-    //
-    //     PhysicsWorld& basePhysicsWorld = rollbackManager.GetPhysicsWorld();
-    //     FrameNumber currentFrame = basePhysicsWorld.GetCurrentFrame();
-    //
-    //     //Update the input of this client
-    //     InputData input = playerInput.GetInputData(currentFrame);
-    //     clientHandler.SendInput(input);
-    //     clientHandler.UpdateInput(clientHandler.GetClientID(), input);
-    //
-    //     //Update the input of other clients and handle other packets, deserializing new game state
-    //     bool newGameData = false;
-    //     clientHandler.ReadMessages(basePhysicsWorld, newGameData);
-    //
-    //     FrameNumber lastConfirmedFrame = clientHandler.GetLastConfirmedFrame();
-    //
-    //     if (RollbackDebugMode)
-    //     {
-    //         if (currentFrame < MaxRollBackFrames)
-    //             lastConfirmedFrame = 1;
-    //         else
-    //             lastConfirmedFrame = currentFrame - (MaxRollBackFrames - 1);
-    //     }
-    //
-    //     if (lastConfirmedFrame > currentFrame)
-    //     {
-    //         //Should only be possible at start
-    //         lastConfirmedFrame = currentFrame;
-    //     }
-    //
-    //     if (newGameData)
-    //     {
-    //         rollbackManager.Reset(); //TODO: With delay frames might still be behind
-    //         lastConfirmedFrame = currentFrame;
-    //     }
-    //     else if (lastConfirmedFrame < currentFrame)
-    //     {
-    //         if (currentFrame - lastConfirmedFrame >= MaxRollBackFrames)
-    //         {
-    //             std::cout << "Could not rollback " << currentFrame - lastConfirmedFrame << "frames" << std::endl;
-    //         }
-    //         else
-    //         {
-    //             int32_t rollbackCount = rollbackManager.Restore();
-    //
-    //             if (rollbackCount < 0)
-    //             {
-    //                 std::cout << "Could not rollback from frame " << currentFrame << "to frame " << lastConfirmedFrame << std::endl;
-    //             }
-    //             else if (rollbackCount > 0)
-    //             {
-    //                 //ToDo: will always rollback when last confirmed frame is < current frame. Add checking if the received input is equal to the predicted
-    //                 //std::cout << "Rollback " << rollbackCount << " frames" << std::endl;
-    //
-    //                 for(int32_t i = 0; i < rollbackCount; ++i)
-    //                 {
-    //                     rollbackManager.NextFrame(lastConfirmedFrame);
-    //                     std::vector<Input*> inputs = clientHandler.GetAllClientInputs(basePhysicsWorld.GetCurrentFrame());
-    //                     basePhysicsWorld.Update(fixedDelta, inputs);
-    //                 }
-    //             }
-    //         }
-    //     }
-    //
-    //     rollbackManager.NextFrame(lastConfirmedFrame);
-    //     std::vector<Input*> inputs = clientHandler.GetAllClientInputs(currentFrame);
-    //     basePhysicsWorld.Update(deltaTime, inputs);
-    //     clientHandler.SendGameData(basePhysicsWorld);
-    // }
 
     void Render()
     {

@@ -34,3 +34,5 @@ private:
     bool filled;
     ComponentCollection<T> data;
 };
+
+static_assert(std::is_trivially_default_constructible_v<ComponentCollectionCache<int>>, "ComponentCollectionCache needs to be trivial");

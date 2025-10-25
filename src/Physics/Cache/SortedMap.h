@@ -106,3 +106,5 @@ private:
 
     static_assert(std::is_trivially_default_constructible_v<ValueType>, "Type for sorted cache needs to be trivial");
 };
+
+static_assert(std::is_trivially_default_constructible_v<SortedMap<int, bool, 1>>, "SortedMap needs to be trivial");

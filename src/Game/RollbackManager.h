@@ -27,17 +27,18 @@ public:
         }
     }
 
-    //Rollback the amount of specified frames from the current frame
+    /// Restores the game state to the last confirmed state.
+    /// Returns the frame of the confirmed frame
     FrameNumber Restore()
     {
         FrameNumber currentFrame = BasePhysicsWorld.GetCurrentFrame();
 
-        if (currentFrame <= ConfirmedPhysicsWorldData.CurrentFrame) return currentFrame - ConfirmedPhysicsWorldData.CurrentFrame;
+        if (currentFrame <= ConfirmedPhysicsWorldData.CurrentFrame) return ConfirmedPhysicsWorldData.CurrentFrame;
 
         //Restore last confirmed game state
         BaseLayer.Overwrite(ConfirmedLayer);
         BasePhysicsWorldData = ConfirmedPhysicsWorldData; //todo check if same LastConfirmedFrame
-        return currentFrame - ConfirmedPhysicsWorldData.CurrentFrame;
+        return ConfirmedPhysicsWorldData.CurrentFrame;
     }
 
     void Reset()

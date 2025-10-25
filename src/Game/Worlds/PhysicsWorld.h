@@ -116,9 +116,9 @@ public:
         baseLayer.AddComponent(box2, Movable(Fixed16_16(5)));
     }
 
-    void Update(Fixed16_16 deltaTime)
+    void Update(Fixed16_16 deltaTime, std::vector<Action>& actions)
     {
-        UpdateDebug();
+        UpdateDebug(actions);
         //movingSystem->Update(deltaTime);
 
         rigidBodySystem->HandleCollisions(physicsWorldData.CurrentFrame);
@@ -136,27 +136,27 @@ public:
         ++physicsWorldData.CurrentFrame;
     }
 
-    void UpdateDebug()
+    void UpdateDebug(std::vector<Action>& actions)
     {
-        if (m_Action->GetMouseButtonDown(1))
+        for (Action& action : actions)
         {
-            Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(m_Action->GetMousePosition());
-            PhysicsUtils::CreateRandomCircleFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
-            std::cout << "Create new circle\n";
-        }
+            if (action.GetMouseButtonDown(1))
+            {
+                Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(action.GetMousePosition());
+                PhysicsUtils::CreateRandomCircleFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
+            }
 
-        if (m_Action->GetMouseButtonDown(3))
-        {
-            Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(m_Action->GetMousePosition());
-            PhysicsUtils::CreateRandomBoxFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
-            std::cout << "Create new box\n";
-        }
+            if (action.GetMouseButtonDown(3))
+            {
+                Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(action.GetMousePosition());
+                PhysicsUtils::CreateRandomBoxFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
+            }
 
-        if (m_Action->GetMouseButtonDown(2))
-        {
-            Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(m_Action->GetMousePosition());
-            PhysicsUtils::CreateRandomPolygonFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
-            std::cout << "Create new convex\n";
+            if (action.GetMouseButtonDown(2))
+            {
+                Vector2 mouseWorldPosition = m_Camera.ScreenToWorld(action.GetMousePosition());
+                PhysicsUtils::CreateRandomPolygonFromPosition(baseLayer, physicsWorldData.NumberGenerator, mouseWorldPosition);
+            }
         }
     }
 

@@ -72,18 +72,24 @@ public:
     T& GetComponent(Entity entity)
     {
         assert(entity < MAXENTITIES);
+
+        if (entityToIndex[entity] == ENTITYNULL)
+        {
+            bool b = false;
+        }
+
         assert(entityToIndex[entity] != ENTITYNULL && "Trying to get a component that does not exist");
         return components[entityToIndex[entity]];
     }
 
     //Checks whether the given entity has the component by checking the sparse set for entity null
-    bool HasComponent(Entity entity) const
+    [[nodiscard]] bool HasComponent(Entity entity) const
     {
         return entity < MAXENTITIES && entityToIndex[entity] != ENTITYNULL;
     }
 
     //Returns the entity count (all entities that have this component type attached)
-    std::uint32_t GetEntityCount() const
+    [[nodiscard]] uint32_t GetEntityCount() const
     {
         return entityCount;
     }

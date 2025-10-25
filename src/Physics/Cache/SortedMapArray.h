@@ -43,3 +43,5 @@ private:
     uint32_t currentIteration;
     std::array<SortedMap<KeyType, ValueType, size>, iterationCount> data;
 };
+
+static_assert(std::is_trivially_default_constructible_v<SortedMapArray<int, bool, 1, 1>>, "SortedMapArray needs to be trivial");
