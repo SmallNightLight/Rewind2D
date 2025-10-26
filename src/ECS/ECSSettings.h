@@ -14,15 +14,10 @@ using ComponentType = uint8_t;
 using SystemType = uint8_t;
 using WorldType = uint8_t;
 using FrameNumber = uint32_t;
+using Island = uint32_t;
 
-static constexpr uint32_t MAXENTITIES = 500;
+static constexpr UInt_E MAXENTITIES = 500;              //Should NEVER be > MAXUINT32 - 2
 static constexpr Entity ENTITYNULL = MAXENTITIES + 1;
-
-//Types
-static constexpr int32_t QUADTREE_MAX_DEPTH = 8;
-using NodeID = uint32_t;
-static constexpr NodeID NODENULL (-1);
-
 
 static const unsigned char BitReverseTable256[] =
 {

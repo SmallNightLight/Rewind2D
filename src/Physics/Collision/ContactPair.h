@@ -97,6 +97,9 @@ struct ContactPair
     Vector2 Normal;
     Fixed16_16 Friction;
 
+    bool EntityStatic1;
+    bool EntityStatic2;
+
     friend inline constexpr bool operator==(const ContactPair& left, const EntityPair& right) noexcept
     {
         return left.EntityKey == right;

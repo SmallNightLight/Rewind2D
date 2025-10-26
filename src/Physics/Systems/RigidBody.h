@@ -7,6 +7,8 @@
 #include <immintrin.h>
 #include <vector>
 
+#include "../Cache/ContactCache.h"
+
 class RigidBody
 {
 public:
@@ -99,7 +101,11 @@ public:
                 //Only possible since we first check if the entity has changed during rollback
             }
         }
+
+        contactCache.CreateGroup(ContactPairs);
     }
+
+    ContactCache<MAXENTITIES> contactCache {};
 
     void SetupEntityTransforms(bool useCache) //optimize inline in the handlecol? todo divide into two bools for both
     {
