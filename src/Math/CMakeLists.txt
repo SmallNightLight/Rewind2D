@@ -17,4 +17,7 @@ add_library(Math INTERFACE
         Stream.h
         HashUtils.h
         Span.h
+        SparseSet.h
+        Bitset.h
+        LinkedList.h
 )

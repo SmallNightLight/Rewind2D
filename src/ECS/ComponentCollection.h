@@ -72,12 +72,6 @@ public:
     T& GetComponent(Entity entity)
     {
         assert(entity < MAXENTITIES);
-
-        if (entityToIndex[entity] == ENTITYNULL)
-        {
-            bool b = false;
-        }
-
         assert(entityToIndex[entity] != ENTITYNULL && "Trying to get a component that does not exist");
         return components[entityToIndex[entity]];
     }

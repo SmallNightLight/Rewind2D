@@ -7,7 +7,7 @@
 #include <immintrin.h>
 #include <vector>
 
-#include "../Cache/ContactCache.h"
+#include "../Cache/ContactCache2.h"
 
 class RigidBody
 {
@@ -60,11 +60,11 @@ public:
             {
                 const Entity& entity2 = *it2;
 
-                //Entity pairs should be ordered
+                //todo Entity pairs should be ordered (currently is)
 
                 Transform& transform2 = transformCollection->GetComponent(entity2);
                 EntityPair entityPair = EntityPair::Make(entity1, entity2);
-
+                //std::cout << entityPair.Key << std::endl;
                 //Check if collision already occurred in the past
                 if (useCache && !transform1.Changed && !transform2.Changed)
                 {
@@ -102,10 +102,10 @@ public:
             }
         }
 
-        contactCache.CreateGroup(ContactPairs);
+        //contactCache.CreateGroup(ContactPairs);
     }
 
-    ContactCache<MAXENTITIES> contactCache {};
+    ContactCache2<MAXENTITIES, MAXENTITIES * 2> contactCache { };
 
     void SetupEntityTransforms(bool useCache) //optimize inline in the handlecol? todo divide into two bools for both
     {
@@ -156,14 +156,9 @@ public:
         //Apply previous impulses
         if (WarmStarting)
         {
-            EntityPair entityPair = EntityPair::Make(contactPair.Entity1, contactPair.Entity2);
             ImpulseData lastImpulseData;
 
-            ImpulseData newImpulseData;
-            newImpulseData.EntityKey = entityPair;
-            newImpulseData.ContactCount = contactPair.ContactCount;
-
-            if (physicsCache->TryGetImpulseData(entityPair, lastImpulseData))
+            if (physicsCache->TryGetImpulseData(contactPair.EntityKey, lastImpulseData))
             {
                 for (uint8_t i = 0; i < contactPair.ContactCount; ++i)
                 {
@@ -224,8 +219,8 @@ public:
         {
             for (ContactPair& contactPair : ContactPairs)
             {
-                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.Entity1);
-                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.Entity2);
+                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity1());
+                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity2());
 
                 for (int i = 0; i < contactPair.ContactCount; ++i)
                 {
@@ -249,8 +244,8 @@ public:
     {
         for (ContactPair& contactPair : ContactPairs)
         {
-            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.Entity1);
-            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.Entity2);
+            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity1());
+            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity2());
 
             for (int i = 0; i < contactPair.ContactCount; ++i)
             {
@@ -298,13 +293,13 @@ public:
 
                     //Clamp friction
                     Fixed16_16 oldTangentImpulse =  contact.LastImpulse.Pt;
-                    contact.LastImpulse.Pt = clamp(oldTangentImpulse + dPt, -maxPt, maxPt);
+                    contact.LastImpulse.Pt = Clamp(oldTangentImpulse + dPt, -maxPt, maxPt);
                     dPt =  contact.LastImpulse.Pt - oldTangentImpulse;
                 }
                 else
                 {
                     Fixed16_16 maxPt = contactPair.Friction * dPn;
-                    dPt = clamp(dPt, -maxPt, maxPt);
+                    dPt = Clamp(dPt, -maxPt, maxPt);
                 }
 
                 //Apply contact impulse
@@ -346,12 +341,15 @@ public:
 
         for (ContactPair& contactPair : ContactPairs)
         {
-            TransformMeta& transformMeta1 = transformMetaCollection->GetComponent(contactPair.Entity1);     //todo the static check is not worth the access also above
-            TransformMeta& transformMeta2 = transformMetaCollection->GetComponent(contactPair.Entity2);
-            Transform& transform1 = transformCollection->GetComponent(contactPair.Entity1);
-            Transform& transform2 = transformCollection->GetComponent(contactPair.Entity2);
-            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.Entity1);
-            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.Entity2);
+            Entity entity1 = contactPair.EntityKey.Entity1();
+            Entity entity2 = contactPair.EntityKey.Entity2();
+
+            TransformMeta& transformMeta1 = transformMetaCollection->GetComponent(entity1);     //todo the static check is not worth the access also above
+            TransformMeta& transformMeta2 = transformMetaCollection->GetComponent(entity2);
+            Transform& transform1 = transformCollection->GetComponent(entity1);
+            Transform& transform2 = transformCollection->GetComponent(entity2);
+            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(entity1);
+            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(entity2);
 
             for (uint8_t i = 0; i < contactPair.ContactCount; ++i)
             {
@@ -362,7 +360,7 @@ public:
                 constexpr Fixed16_16 maxCorrection = -Fixed16_16(5);
                 constexpr Fixed16_16 slop = Fixed16_16(1) / Fixed16_16(100);
 
-                Fixed16_16 steeringForce = clamp(steeringConstant * (contact.Separation + slop), maxCorrection, Fixed16_16(0));
+                Fixed16_16 steeringForce = Clamp(steeringConstant * (contact.Separation + slop), maxCorrection, Fixed16_16(0));
                 Vector2 impulse = contactPair.Normal * (-steeringForce * contact.MassNormal);
 
                 if (!transformMeta1.IsStatic)
@@ -382,7 +380,7 @@ public:
 
             //Cache impulses
             ImpulseData newImpulses;
-            newImpulses.EntityKey = EntityPair::Make(contactPair.Entity1, contactPair.Entity2);
+            newImpulses.EntityKey = contactPair.EntityKey;
             newImpulses.ContactCount = contactPair.ContactCount;
 
             for (uint8_t i = 0; i < contactPair.ContactCount; ++i)
@@ -395,7 +393,7 @@ public:
     }
 
 private:
-    inline Fixed16_16 clamp(Fixed16_16 value, Fixed16_16 min, Fixed16_16 max)
+    inline static Fixed16_16 Clamp(Fixed16_16 value, Fixed16_16 min, Fixed16_16 max)
     {
         return fpm::max(min, fpm::min(value, max));
     }

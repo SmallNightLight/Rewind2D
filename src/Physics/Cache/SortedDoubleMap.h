@@ -61,6 +61,33 @@ public:
         return false;
     }
 
+    ///Reads the value at the key, without ever writing to the secondary buffer
+    ///Returns if the key was found in the buffer
+    inline constexpr bool ReadCurrent(ValueType& valueResult) noexcept
+    {
+        if (currentIndex >= count[flop]) return false;
+
+        valueResult = GetFlop(currentIndex);
+        return true;
+    }
+
+    //Advances the current index. Use this with the ReadCurrent function
+    inline constexpr void Advance() noexcept
+    {
+        currentIndex++;
+    }
+
+    [[nodiscard]] inline constexpr uint32_t CurrentIndex() const noexcept
+    {
+        return currentIndex;
+    }
+
+    ///Returns the count of the reading buffer
+    [[nodiscard]] inline constexpr uint32_t ReadCurrentCount() const noexcept
+    {
+        return count[flop];
+    }
+
     ///Clears the cache completely
     inline constexpr void Reset() noexcept
     {

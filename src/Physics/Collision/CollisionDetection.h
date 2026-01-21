@@ -259,8 +259,6 @@ private:
 
             if (swap)
             {
-                  contactPair.Entity1 = entity2;
-                  contactPair.Entity2 = entity1;
                   contactPair.EntityKey = EntityPair::Make(entity2, entity1);
 
                   for (int i = 0; i < contactPair.ContactCount; ++i)
@@ -274,8 +272,6 @@ private:
             }
             else
             {
-                  contactPair.Entity1 = entity1;
-                  contactPair.Entity2 = entity2;
                   contactPair.EntityKey = EntityPair::Make(entity1, entity2);
 
                   for (int i = 0; i < contactPair.ContactCount; ++i)

@@ -6,45 +6,55 @@
 #include "ECSSettings.h"
 
 template<uint32_t Capacity>
-class EntityQueue //TODO: should not be sparse set but trivial set?
+class EntityQueue
 {
 public:
-    EntityQueue() = default;
+    inline EntityQueue() noexcept = default; //todo: make queue use optimization & (capacity - 1) with capacity power of 2
 
-    void Push(Entity value)
+    inline void Push(Entity value)
     {
-        assert(size < Capacity && "EntityQueue overflow");
-        data[tail] = value;
-        tail = (tail + 1) % Capacity;
-        ++size;
+        assert(m_Size < Capacity && "EntityQueue overflow");
+        m_Data[m_Tail] = value;
+        m_Tail = (m_Tail + 1) % Capacity;
+        ++m_Size;
     }
 
-    Entity Front() const
+    [[nodiscard]] inline Entity Front() const
     {
-        assert(size > 0 && "EntityQueue is empty");
-        return data[head];
+        assert(m_Size > 0 && "EntityQueue is empty");
+        return m_Data[m_Head];
     }
 
-    void Pop()
+    inline void Pop()
     {
-        assert(size > 0 && "EntityQueue is empty");
-        head = (head + 1) % Capacity;
-        --size;
+        assert(m_Size > 0 && "EntityQueue is empty");
+        m_Head = (m_Head + 1) % Capacity;
+        --m_Size;
     }
 
-    inline bool Empty() const
+    inline Entity Dequeue()
     {
-        return size == 0;
+        assert(m_Size > 0 && "EntityQueue is empty");
+
+        Entity value = m_Data[m_Head];
+        m_Head = (m_Head + 1) % Capacity;
+        --m_Size;
+        return value;
     }
 
-    inline std::size_t Count() const
+    [[nodiscard]] inline bool Empty() const
     {
-        return size;
+        return m_Size == 0;
+    }
+
+    [[nodiscard]] inline std::size_t Count() const
+    {
+        return m_Size;
     }
 
 private:
-    std::array<Entity, Capacity> data { };
-    uint32_t head = 0;
-    uint32_t tail = 0;
-    uint32_t size = 0;
+    std::array<Entity, Capacity> m_Data { };
+    uint32_t m_Head = 0;
+    uint32_t m_Tail = 0;
+    uint32_t m_Size = 0;
 };

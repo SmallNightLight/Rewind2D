@@ -88,8 +88,6 @@ struct ContactPair
     ContactPair() = default;
 
     EntityPair EntityKey;
-    Entity Entity1;
-    Entity Entity2;
 
     std::array<Contact, 2> Contacts;
     uint8_t ContactCount;

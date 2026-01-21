@@ -38,4 +38,5 @@ add_library(Physics INTERFACE
         Systems/PolygonColliderRenderer.h
         Systems/MovingSystem.h
         Cache/ContactCache.h
+        Cache/ContactCache2.h
 )

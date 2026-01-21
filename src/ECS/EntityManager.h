@@ -36,11 +36,10 @@ public:
 	{
 		assert(activeEntityCount < MAXENTITIES && "Too many entities. Extend the buffer size");
 
-		Entity id = availableEntities.Front();
-		availableEntities.Pop();
+		Entity entity = availableEntities.Dequeue();
 		activeEntityCount++;
 
-		return id;
+		return entity;
 	}
 
     //Destroys the entity and frees up the space for one additional entity
