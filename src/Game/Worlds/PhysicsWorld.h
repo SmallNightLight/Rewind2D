@@ -261,7 +261,7 @@ public:
 
         std::vector<Entity> entities;
         std::vector<PhysicsSignature> signatures;
-        std::array<uint32_t, MAXENTITIES> entityIndexes;
+        std::array<uint32_t, s_MaxEntities> entityIndexes;
 
         physicsWorldData.CurrentFrame = stream.ReadInteger<FrameNumber>();
 
@@ -376,9 +376,9 @@ private:
         //Read the entity count
         Entity entityCount = stream.ReadInteger<Entity>();
 
-        if (entityCount > MAXENTITIES)
+        if (entityCount > s_MaxEntities)
         {
-            throw "Entity count larger than MAXENTITIES";
+            throw "Entity count larger than Max Entities";
         }
 
         entities.resize(entityCount);
@@ -399,21 +399,21 @@ private:
     }
 
     //Add entities to the layer
-    static void AddEntities(PhysicsLayer& physicsLayer, const std::vector<Entity>& entities, std::array<uint32_t, MAXENTITIES>& entityIndexes)
+    static void AddEntities(PhysicsLayer& physicsLayer, const std::vector<Entity>& entities, std::array<uint32_t, s_MaxEntities>& entityIndexes)
     {
-        for (Entity entity = 0; entity < MAXENTITIES; ++entity)
+        for (Entity entity = 0; entity < s_MaxEntities; ++entity)
         {
             physicsLayer.CreateEntity();
         }
 
-        std::bitset<MAXENTITIES> entityPresent;
+        std::bitset<s_MaxEntities> entityPresent;
 
         for (const Entity& entity : entities)
         {
             entityPresent.set(entity, true);
         }
 
-        for (Entity entity = 0; entity < MAXENTITIES; ++entity)
+        for (Entity entity = 0; entity < s_MaxEntities; ++entity)
         {
             if (!entityPresent.test(entity))
                 physicsLayer.ImmediatelyDestroyEntity(entity);
@@ -427,7 +427,7 @@ private:
     }
 
     template<typename Component>
-    static void DeserializeComponentCollection(Stream& stream, PhysicsLayer& physicsLayer, std::array<uint32_t, MAXENTITIES>& entityIndexes, const std::vector<PhysicsSignature>& signatures)
+    static void DeserializeComponentCollection(Stream& stream, PhysicsLayer& physicsLayer, std::array<uint32_t, s_MaxEntities>& entityIndexes, const std::vector<PhysicsSignature>& signatures)
     {
         //Read the componentType and verify
         ComponentType componentType = stream.ReadInteger<ComponentType>();

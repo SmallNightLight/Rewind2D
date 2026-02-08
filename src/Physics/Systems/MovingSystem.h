@@ -66,5 +66,5 @@ private:
     ComponentCollection<Movable>* movableCollection;
 
 public:
-    EntitySet<MAXENTITIES> Entities;
+    EntitySet<s_MaxEntities> Entities;
 };

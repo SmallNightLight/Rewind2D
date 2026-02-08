@@ -105,7 +105,7 @@ public:
         //contactCache.CreateGroup(ContactPairs);
     }
 
-    ContactCache2<MAXENTITIES, MAXENTITIES * 2> contactCache { };
+    ContactCache2<s_MaxEntities, s_MaxEntities * 2> contactCache { };
 
     void SetupEntityTransforms(bool useCache) //optimize inline in the handlecol? todo divide into two bools for both
     {
@@ -416,5 +416,5 @@ private:
 
 public:
     std::vector<ContactPair> ContactPairs;
-    EntitySet<MAXENTITIES> Entities;
+    EntitySet<s_MaxEntities> Entities;
 };

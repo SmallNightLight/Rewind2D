@@ -7,7 +7,7 @@
 class CacheManager
 {
 public:
-    CacheManager() : collisionCache(MaxRollBackFrames) { }
+    CacheManager() : collisionCache(s_MaxRollBackFrames) { }
 
     inline CollisionCache* GetCollisionCache()
     {

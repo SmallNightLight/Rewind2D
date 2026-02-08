@@ -60,14 +60,14 @@ public:
 
     void Update()
     {
-        constexpr Uint64 deltaNS = 1'000'000'000 / SimulationFPS;
+        constexpr Uint64 deltaNS = 1'000'000'000 / s_SimulationFPS;
 
         Uint64 currentTime = SDL_GetTicksNS();
         Uint64 frameTime = currentTime - m_LastTick;
         m_LastTick = currentTime;
 
         //Limit the frame time to avoid spiral of death (large lag spikes)
-        frameTime = std::min(frameTime, MaxFrameTimeNS);
+        frameTime = std::min(frameTime, s_MaxFrameTimeNS);
         m_Accumulator += frameTime;
 
         while (m_Accumulator >= deltaNS)
@@ -105,24 +105,9 @@ public:
         }
     }
 
-// int fgbewrhiuo;
-//     void Step()
-//     {
-//         constexpr Fixed16_16 fixedDelta = Fixed16_16(1) / Fixed16_16(SimulationFPS);
-//         PhysicsWorld& basePhysicsWorld = rollbackManager.GetPhysicsWorld();
-//         FrameNumber currentFrame = basePhysicsWorld.GetCurrentFrame();
-//         FrameNumber lastConfirmedFrame = fgbewrhiuo++;//clientHandler.GetLastConfirmedFrame();
-//
-//         rollbackManager.NextFrame(lastConfirmedFrame);
-//         //std::vector<Input*> inputs = clientHandler.GetAllClientInputs(currentFrame);
-//         basePhysicsWorld.Update(fixedDelta);
-//         //clientHandler.SendGameData(basePhysicsWorld);
-//         m_PlayerAction.Update();
-//     }
-
     void Step()
     {
-        constexpr Fixed16_16 fixedDelta = Fixed16_16(1) / Fixed16_16(SimulationFPS);
+        constexpr Fixed16_16 fixedDelta = Fixed16_16(1) / Fixed16_16(s_SimulationFPS);
 
         PhysicsWorld& basePhysicsWorld = rollbackManager.GetPhysicsWorld();
         FrameNumber currentFrame = basePhysicsWorld.GetCurrentFrame();
@@ -139,12 +124,12 @@ public:
 
         FrameNumber lastConfirmedFrame = m_ClientHandler.GetLastConfirmedFrame();
 
-        if (RollbackDebugMode)
+        if (s_RollbackDebugMode)
         {
-            if (currentFrame < MaxRollBackFrames)
+            if (currentFrame < s_MaxRollBackFrames)
                 lastConfirmedFrame = 1;
             else
-                lastConfirmedFrame = currentFrame - (MaxRollBackFrames - 1);
+                lastConfirmedFrame = currentFrame - (s_MaxRollBackFrames - 1);
         }
 
         if (lastConfirmedFrame > currentFrame)
@@ -160,7 +145,7 @@ public:
         }
         else if (lastConfirmedFrame < currentFrame)
         {
-            if (currentFrame - lastConfirmedFrame >= MaxRollBackFrames)
+            if (currentFrame - lastConfirmedFrame >= s_MaxRollBackFrames)
             {
                 std::cout << "Could not rollback " << currentFrame - lastConfirmedFrame << "frames" << std::endl;
             }

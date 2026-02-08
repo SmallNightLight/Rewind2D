@@ -33,7 +33,7 @@ public:
 
     bool Insert(Entity entity)
     {
-        assert(entity < MAXENTITIES && "Entity out of range");
+        assert(entity < s_MaxEntities && "Entity out of range");
 
         if (entityToIndex[entity] != InvalidEntity) return false;
 
@@ -49,7 +49,7 @@ public:
     //Removes the entity from the given entity
     void Erase(Entity entity)
     {
-        assert(entity < MAXENTITIES && "Entity out of range");
+        assert(entity < s_MaxEntities && "Entity out of range");
 
         uint32_t index = entityToIndex[entity];
 
@@ -69,7 +69,7 @@ public:
 
     inline bool Contains(Entity entity) const
     {
-        assert(entity < MAXENTITIES && "Entity out of range");
+        assert(entity < s_MaxEntities && "Entity out of range");
         return entityToIndex[entity] != InvalidEntity;
     }
 
@@ -97,7 +97,7 @@ private:
     static constexpr uint32_t InvalidEntity = Capacity;
 
     std::array<Entity, Capacity> entities;
-    std::array<uint32_t, MAXENTITIES> entityToIndex;
+    std::array<uint32_t, s_MaxEntities> entityToIndex;
 
     uint32_t entityCount;
 };

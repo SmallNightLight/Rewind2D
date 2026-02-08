@@ -25,16 +25,19 @@ public:
         //Assign and merge islands
         for (const ContactPair& pair : contactPairs)
         {
-            Island island1 = m_EntityIslands[pair.Entity1];
-            Island island2 = m_EntityIslands[pair.Entity2];
+            Entity entity1 = pair.EntityKey.Entity1();
+            Entity entity2 = pair.EntityKey.Entity2();
 
-            if (m_EntityIslands[pair.Entity1] == InvalidIsland)
+            Island island1 = m_EntityIslands[entity1];
+            Island island2 = m_EntityIslands[entity2];
+
+            if (m_EntityIslands[entity1] == InvalidIsland)
             {
-                m_ActiveEntities[m_ActiveEntityCount++] = pair.Entity1;
+                m_ActiveEntities[m_ActiveEntityCount++] = entity1;
             }
-            if (m_EntityIslands[pair.Entity2] == InvalidIsland)
+            if (m_EntityIslands[entity2] == InvalidIsland)
             {
-                m_ActiveEntities[m_ActiveEntityCount++] = pair.Entity2;
+                m_ActiveEntities[m_ActiveEntityCount++] = entity2;
             }
 
             assert((!pair.EntityStatic1 || !pair.EntityStatic2) && "Two static entities should not form a contact pair");
@@ -43,8 +46,8 @@ public:
             {
                 //Entity 1 is static: Only add island to entity 2
                 Island newIsland = m_IslandCount++;
-                m_EntityIslands[pair.Entity1] = StaticIsland;
-                m_EntityIslands[pair.Entity2] = newIsland;
+                m_EntityIslands[entity1] = StaticIsland;
+                m_EntityIslands[entity2] = newIsland;
 
                 ++m_IslandEntityCounts[newIsland];
             }
@@ -52,8 +55,8 @@ public:
             {
                 //Entity 2 is static: Only add island to entity 1
                 Island newIsland = m_IslandCount++;
-                m_EntityIslands[pair.Entity2] = StaticIsland;
-                m_EntityIslands[pair.Entity1] = newIsland;
+                m_EntityIslands[entity2] = StaticIsland;
+                m_EntityIslands[entity1] = newIsland;
 
                 ++m_IslandEntityCounts[newIsland];
             }
@@ -61,22 +64,22 @@ public:
             {
                 //No island yet assigned for either entities: Create new island
                 Island newIsland = m_IslandCount++;
-                m_EntityIslands[pair.Entity1] = newIsland;
-                m_EntityIslands[pair.Entity2] = newIsland;
+                m_EntityIslands[entity1] = newIsland;
+                m_EntityIslands[entity2] = newIsland;
 
                 m_IslandEntityCounts[newIsland] += 2;
             }
             else if (island1 == InvalidIsland)
             {
                 //Only entity 1 has an island assigned: Assign island 2 to entity 1
-                m_EntityIslands[pair.Entity1] = island2;
+                m_EntityIslands[entity1] = island2;
 
                 ++m_IslandEntityCounts[island2];
             }
             else if (island2 == InvalidIsland)
             {
                 //Only entity 2 has an island assigned: Assign island 1 to entity 2
-                m_EntityIslands[pair.Entity2] = island1;
+                m_EntityIslands[entity2] = island1;
 
                 ++m_IslandEntityCounts[island1];
             }

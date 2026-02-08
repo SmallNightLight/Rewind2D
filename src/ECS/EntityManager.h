@@ -3,6 +3,7 @@
 #include "EntityQueue.h"
 #include "ECSSettings.h"
 
+#include <bitset>
 #include <array>
 #include <cassert>
 #include <queue>
@@ -20,7 +21,7 @@ public:
     //Initializes the EntityManager by populating a queue with all available entities
 	EntityManager()
 	{
-		for (Entity entity = 0; entity < MAXENTITIES; ++entity)
+		for (Entity entity = 0; entity < s_MaxEntities; ++entity)
 		{
 			availableEntities.Push(entity);
 		}
@@ -34,7 +35,7 @@ public:
     //Creates a new entity and returns the entity ID
 	Entity CreateEntity()
 	{
-		assert(activeEntityCount < MAXENTITIES && "Too many entities. Extend the buffer size");
+		assert(activeEntityCount < s_MaxEntities && "Too many entities. Extend the buffer size");
 
 		Entity entity = availableEntities.Dequeue();
 		activeEntityCount++;
@@ -45,7 +46,7 @@ public:
     //Destroys the entity and frees up the space for one additional entity
 	void DestroyEntity(Entity entity)
 	{
-		assert(entity < MAXENTITIES && "Entity out of range");
+		assert(entity < s_MaxEntities && "Entity out of range");
 
 		signatures[entity].reset();
 		availableEntities.Push(entity);
@@ -55,7 +56,7 @@ public:
     //Assigns a signature to the entity
 	void SetSignature(Entity entity, Signature signature)
 	{
-		assert(entity < MAXENTITIES && "Entity out of range");
+		assert(entity < s_MaxEntities && "Entity out of range");
 
 		signatures[entity] = signature;
 	}
@@ -63,7 +64,7 @@ public:
     //Gets the signature of the given entity
 	Signature GetSignature(Entity entity) const
 	{
-		assert(entity < MAXENTITIES && "Entity out of range");
+		assert(entity < s_MaxEntities && "Entity out of range");
 
 		return signatures[entity];
 	}
@@ -80,7 +81,7 @@ public:
 		outSignatures.reserve(activeEntityCount);
 		entities.reserve(activeEntityCount);
 
-		for (Entity entity = 0; entity < MAXENTITIES; ++entity)
+		for (Entity entity = 0; entity < s_MaxEntities; ++entity)
 		{
 			Signature signature = signatures[entity];
 
@@ -94,6 +95,6 @@ public:
 
 private:
 	uint32_t activeEntityCount { };
-	std::array<Signature, MAXENTITIES> signatures { };
-	EntityQueue<MAXENTITIES> availableEntities { };
+	std::array<Signature, s_MaxEntities> signatures { };
+	EntityQueue<s_MaxEntities> availableEntities { };
 };

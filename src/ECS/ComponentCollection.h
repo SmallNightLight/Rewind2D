@@ -19,16 +19,16 @@ public:
     //Initializes the sparse set with null entities, to indicate that all entities have no components
     void Initialize()
     {
-        entityToIndex.fill(ENTITYNULL);
-        indexToEntity.fill(ENTITYNULL); //TODO can be removed also at the bottom
+        entityToIndex.fill(s_InvalidEntity);
+        indexToEntity.fill(s_InvalidEntity); //TODO can be removed also at the bottom
         entityCount = 0;
     }
 
     //Adds the component of type T to the given entity
     T* AddComponent(Entity entity, T component)
     {
-        assert(entity < MAXENTITIES && "Entity out of range");
-        assert(entityToIndex[entity] == ENTITYNULL&& "Component added to the same entity more than once. Use MultiComponentArray instead");
+        assert(entity < s_MaxEntities && "Entity out of range");
+        assert(entityToIndex[entity] == s_InvalidEntity&& "Component added to the same entity more than once. Use MultiComponentArray instead");
 
         //New index is the next available index in the component list
         std::int32_t entityIndex = entityCount;
@@ -47,8 +47,8 @@ public:
     //Removes the component from the given entity
     void RemoveComponent(Entity entity)
     {
-        assert(entity < MAXENTITIES && "Entity out of range");
-        assert(entityToIndex[entity] != ENTITYNULL && "Removing a component that does not exist");
+        assert(entity < s_MaxEntities && "Entity out of range");
+        assert(entityToIndex[entity] != s_InvalidEntity && "Removing a component that does not exist");
 
         uint32_t indexOfRemovedEntity = entityToIndex[entity];
         uint32_t lastEntityIndex = entityCount - 1; //TODO: range exception
@@ -62,8 +62,8 @@ public:
         indexToEntity[indexOfRemovedEntity] = entityOfLastIndex;
 
         //Set the now invalid index to NULL
-        entityToIndex[entity] = ENTITYNULL;
-        indexToEntity[lastEntityIndex] = ENTITYNULL;
+        entityToIndex[entity] = s_InvalidEntity;
+        indexToEntity[lastEntityIndex] = s_InvalidEntity;
 
         entityCount--;
     }
@@ -71,15 +71,15 @@ public:
     //Gets a reference to the component for the given entity
     T& GetComponent(Entity entity)
     {
-        assert(entity < MAXENTITIES);
-        assert(entityToIndex[entity] != ENTITYNULL && "Trying to get a component that does not exist");
+        assert(entity < s_MaxEntities);
+        assert(entityToIndex[entity] != s_InvalidEntity && "Trying to get a component that does not exist");
         return components[entityToIndex[entity]];
     }
 
     //Checks whether the given entity has the component by checking the sparse set for entity null
     [[nodiscard]] bool HasComponent(Entity entity) const
     {
-        return entity < MAXENTITIES && entityToIndex[entity] != ENTITYNULL;
+        return entity < s_MaxEntities && entityToIndex[entity] != s_InvalidEntity;
     }
 
     //Returns the entity count (all entities that have this component type attached)
@@ -91,9 +91,9 @@ public:
     //Removes the component from the entity if possible
     void DestroyEntity(Entity entity)
     {
-        assert(entity < MAXENTITIES && "Entity out of range");
+        assert(entity < s_MaxEntities && "Entity out of range");
 
-        if (entityToIndex[entity] != ENTITYNULL)
+        if (entityToIndex[entity] != s_InvalidEntity)
         {
             RemoveComponent(entity);
         }
@@ -101,16 +101,16 @@ public:
 
     void Overwrite(ComponentCollection* other)
     {
-        std::memcpy(&components, &other->components, sizeof(std::array<T, MAXENTITIES>));
+        std::memcpy(&components, &other->components, sizeof(std::array<T, s_MaxEntities>));
         indexToEntity = other->indexToEntity;
         entityToIndex = other->entityToIndex;
         entityCount = other->entityCount;
     }
 
 private:
-    std::array<T, MAXENTITIES> components;
-    std::array<Entity, MAXENTITIES> indexToEntity;
-    std::array<std::uint32_t, MAXENTITIES> entityToIndex;
+    std::array<T, s_MaxEntities> components;
+    std::array<Entity, s_MaxEntities> indexToEntity;
+    std::array<std::uint32_t, s_MaxEntities> entityToIndex;
 
     std::uint32_t entityCount;
 };

@@ -1,10 +1,6 @@
 #pragma once
 
-#include <bitset>
 #include <cstdint>
-
-//Rollback
-static constexpr uint8_t MaxRollBackFrames = 15; //amount of save states
 
 //ECS
 using Entity = uint32_t;
@@ -16,8 +12,9 @@ using WorldType = uint8_t;
 using FrameNumber = uint32_t;
 using Island = uint32_t;
 
-static constexpr UInt_E MAXENTITIES = 500;              //Should NEVER be > MAXUINT32 - 2
-static constexpr Entity ENTITYNULL = MAXENTITIES + 1;
+static constexpr UInt_E s_MaxEntities = 512;
+static constexpr Entity s_EntityMask = s_MaxEntities - 1;
+static constexpr Entity s_InvalidEntity = s_MaxEntities + 1;
 
 static const unsigned char BitReverseTable256[] =
 {
@@ -38,3 +35,6 @@ static const unsigned char BitReverseTable256[] =
     0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7, 0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
+
+static_assert((s_MaxEntities & (s_MaxEntities - 1)) == 0 && "Max Entities should be a power of two");
+static_assert(s_MaxEntities <= 2147483648 && "Max Entities can not be 2^32");

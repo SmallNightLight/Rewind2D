@@ -11,7 +11,7 @@
 using Cell = std::uint32_t;
 static constexpr std::uint32_t MainBufferSize = 64;
 static constexpr std::uint32_t ExtraBufferSize = 32;
-static constexpr std::uint32_t ExtraBufferCount = MAXENTITIES / ExtraBufferSize;
+static constexpr std::uint32_t ExtraBufferCount = s_MaxEntities / ExtraBufferSize;
 
 static constexpr Rect PartitionArea = Rect(Vector2(0, 0), Vector2(SCREEN_WIDTH, SCREEN_HEIGHT));
 static constexpr Fixed16_16 MaxEntitySize = Fixed16_16::FromFixed(50, 0);
@@ -20,7 +20,7 @@ static constexpr Fixed16_16 CellSize = MaxEntitySize;
 static constexpr Cell CellCountX = static_cast<Cell>(fpm::ceilInt(PartitionArea.Size.X / CellSize));
 static constexpr Cell CellCountY = static_cast<Cell>(fpm::ceilInt(PartitionArea.Size.Y / CellSize));
 static constexpr Cell CellCount = CellCountX * CellCountY;
-static constexpr std::uint32_t IndexNull = MAXENTITIES + 1;
+static constexpr std::uint32_t IndexNull = s_MaxEntities + 1;
 static constexpr std::uint32_t CellNull = CellCount + 1;
 static constexpr std::uint32_t SecondaryIndexNull = ExtraBufferCount + 1;
 static constexpr Vector2uI CellOffsets[4] =
@@ -85,7 +85,7 @@ struct PartitionGrid2 //assuming that all entities have the same size (or the gi
 
     void InsertEntity(Entity entity, Cell cell)
     {
-        assert(entity < MAXENTITIES && "Could not insert entity - entity above entity limit");
+        assert(entity < s_MaxEntities && "Could not insert entity - entity above entity limit");
         assert(cell < CellCount && "Could not insert entity - cell above cell limit");
 
         if (entityCount[cell] < MainBufferSize)
@@ -181,7 +181,7 @@ struct PartitionGrid2 //assuming that all entities have the same size (or the gi
     [[nodiscard]] std::vector<EntityPair2> GetEntityPairs() const
     {
         std::vector<EntityPair2> entityPairs;
-        entityPairs.reserve(MAXENTITIES * 5);
+        entityPairs.reserve(s_MaxEntities * 5);
 
         for(Cell cellX = 0; cellX < CellCountX; ++cellX)
         {
@@ -304,8 +304,8 @@ struct PartitionGrid2 //assuming that all entities have the same size (or the gi
 
 private:
     std::array<Rect, CellCount> cellAreas { };
-    std::array<uint32_t, MAXENTITIES> entityIndexes { };
-    std::array<Cell, MAXENTITIES> entityCells { };
+    std::array<uint32_t, s_MaxEntities> entityIndexes { };
+    std::array<Cell, s_MaxEntities> entityCells { };
 
     std::array<Entity, CellCount * MainBufferSize + ExtraBufferCount * ExtraBufferSize> buffer { };
     std::array<std::uint8_t, CellCount + ExtraBufferCount> entityCount { };

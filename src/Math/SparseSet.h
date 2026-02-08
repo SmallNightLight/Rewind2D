@@ -3,62 +3,67 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <limits>
 
+template<typename T, uint32_t Capacity>
 class SparseSet
 {
+    static_assert(std::is_unsigned_v<T>, "T must be an unsigned integral type");
+    static_assert(Capacity < std::numeric_limits<uint32_t>::max(), "Capacity can not be max uint32 since that is reserved for invalid elements");
+
 public:
     inline SparseSet() noexcept = default;
 
     void Initialize()
     {
-        sparse.fill(ENTITYNULL);
-        dense.fill(ENTITYNULL);
+        sparse.fill(s_InvalidElement);
+        dense.fill(s_InvalidElement);
         count = 0;
     }
 
-    // Adds entity to the set, returns its dense index
-    uint32_t Add(Entity entity)
+    // Adds element to the set, returns its dense index
+    uint32_t Add(T element)
     {
-        assert(entity < MAXENTITIES);
-        assert(!Contains(entity) && "Entity already in SparseSet");
+        assert(element < Capacity);
+        assert(!Contains(element) && "Element already in SparseSet");
 
         uint32_t index = count++;
-        sparse[entity] = index;
-        dense[index] = entity;
+        sparse[element] = index;
+        dense[index] = element;
 
         return index;
     }
 
-    // Removes entity from the set
-    void Remove(Entity entity)
+    // Removes element from the set
+    void Remove(T element)
     {
-        assert(Contains(entity) && "Removing non-existent entity");
+        assert(Contains(element) && "Removing non-existent element");
 
-        uint32_t index = sparse[entity];
+        uint32_t index = sparse[element];
         uint32_t last = count - 1;
-        Entity lastEntity = dense[last];
+        T lastElement = dense[last];
 
-        dense[index] = lastEntity;
-        sparse[lastEntity] = index;
+        dense[index] = lastElement;
+        sparse[lastElement] = index;
 
-        sparse[entity] = ENTITYNULL;
-        dense[last] = ENTITYNULL;
+        sparse[element] = s_InvalidElement;
+        dense[last] = s_InvalidElement;
 
         count--;
     }
 
-    bool Contains(Entity entity) const
+    bool Contains(T element) const
     {
-        return entity < MAXENTITIES && sparse[entity] != ENTITYNULL;
+        return element < Capacity && sparse[element] != s_InvalidElement;
     }
 
-    uint32_t GetIndex(Entity entity) const
+    [[nodiscard]] uint32_t GetIndex(T element) const
     {
-        assert(Contains(entity));
-        return sparse[entity];
+        assert(Contains(element));
+        return sparse[element];
     }
 
-    Entity GetEntity(uint32_t index) const
+    T GetElement(uint32_t index) const
     {
         assert(index < count);
         return dense[index];
@@ -74,7 +79,10 @@ public:
     }
 
 private:
-    std::array<Entity, MAXENTITIES> dense{};
-    std::array<uint32_t, MAXENTITIES> sparse{};
-    uint32_t count{};
+    static constexpr T s_InvalidElement = Capacity + 1;
+    static constexpr uint32_t s_InvalidIndex = std::numeric_limits<uint32_t>::max();
+
+    std::array<T, Capacity> dense { };
+    std::array<uint32_t, Capacity> sparse { };
+    uint32_t count { };
 };

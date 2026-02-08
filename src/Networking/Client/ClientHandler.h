@@ -184,7 +184,7 @@ public:
         }
 
         clientIDs.insert(clientID);
-        m_ClientActions.emplace(clientID, ActionCollection(frame, MaxRollBackFrames * 2));
+        m_ClientActions.emplace(clientID, ActionCollection(frame, s_MaxRollBackFrames * 2));
 
         //Add actions for the first few frames to avoid missing actions
         for(uint32_t i = frame; i < frame + 5; ++i)
