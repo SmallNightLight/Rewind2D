@@ -5,12 +5,10 @@
 class CollisionDetection
 {
 public:
-      explicit CollisionDetection(PhysicsComponentManager& componentManager)
-      {
-            circleColliderCollection = componentManager.GetComponentCollection<CircleCollider>();
-            boxColliderCollection = componentManager.GetComponentCollection<BoxCollider>();
-            polygonColliderCollection = componentManager.GetComponentCollection<PolygonCollider>();
-      }
+      explicit CollisionDetection(PhysicsComponentManager& componentManager) :
+            circleColliderCollection(componentManager.GetComponentCollection<CircleCollider>()),
+            boxColliderCollection(componentManager.GetComponentCollection<BoxCollider>()),
+            polygonColliderCollection(componentManager.GetComponentCollection<PolygonCollider>()) { }
 
       bool DetectCollision(Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2, ContactPair& contactPair) const
       {
@@ -69,12 +67,12 @@ public:
 
       bool CircleCircleCollision(ContactPair& contactPair, Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2) const
       {
-            assert(circleColliderCollection->HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
-            assert(circleColliderCollection->HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
+            assert(circleColliderCollection.HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
+            assert(circleColliderCollection.HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
 
             //Get the components
-            CircleCollider& circleCollider1 = circleColliderCollection->GetComponent(entity1);
-            CircleCollider& circleCollider2 = circleColliderCollection->GetComponent(entity2);
+            CircleCollider& circleCollider1 = circleColliderCollection.GetComponent(entity1);
+            CircleCollider& circleCollider2 = circleColliderCollection.GetComponent(entity2);
 
             //Perform AABB check, to test if entities are able to collide
             if (!circleCollider1.GetAABB(transform1, transformMeta1).Overlaps(circleCollider2.GetAABB(transform2, transformMeta2))) return false;
@@ -97,12 +95,12 @@ public:
 
       bool CircleBoxCollision(ContactPair& contactPair, bool swap, Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2) const
       {
-            assert(circleColliderCollection->HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
-            assert(boxColliderCollection->HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Box) attached");
+            assert(circleColliderCollection.HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
+            assert(boxColliderCollection.HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Box) attached");
 
             //Get the components
-            CircleCollider& circleCollider1 = circleColliderCollection->GetComponent(entity1);
-            BoxCollider& boxCollider2 = boxColliderCollection->GetComponent(entity2);
+            CircleCollider& circleCollider1 = circleColliderCollection.GetComponent(entity1);
+            BoxCollider& boxCollider2 = boxColliderCollection.GetComponent(entity2);
 
             //Perform AABB check, to test if entities are able to collide
             if (!circleCollider1.GetAABB(transform1, transformMeta1).Overlaps(boxCollider2.GetAABB(transform2, transformMeta2))) return false;
@@ -113,12 +111,12 @@ public:
 
       bool CirclePolygonCollision(ContactPair& contactPair, bool swap, Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2) const
       {
-            assert(circleColliderCollection->HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
-            assert(polygonColliderCollection->HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
+            assert(circleColliderCollection.HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Circle) attached");
+            assert(polygonColliderCollection.HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
 
             //Get the components
-            CircleCollider& circleCollider1 = circleColliderCollection->GetComponent(entity1);
-            PolygonCollider& polygonCollider2 = polygonColliderCollection->GetComponent(entity2);
+            CircleCollider& circleCollider1 = circleColliderCollection.GetComponent(entity1);
+            PolygonCollider& polygonCollider2 = polygonColliderCollection.GetComponent(entity2);
 
             //Perform AABB check, to test if entities are able to collide
             if (!circleCollider1.GetAABB(transform1, transformMeta1).Overlaps(polygonCollider2.GetAABB(transform2, transformMeta2))) return false;
@@ -129,12 +127,12 @@ public:
 
       bool BoxBoxCollision(ContactPair& contactPair, Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2) const
       {
-            assert(boxColliderCollection->HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Box) attached");
-            assert(boxColliderCollection->HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Box) attached");
+            assert(boxColliderCollection.HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Box) attached");
+            assert(boxColliderCollection.HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Box) attached");
 
             //Get the components
-            BoxCollider& boxCollider1 = boxColliderCollection->GetComponent(entity1);
-            BoxCollider& boxCollider2 = boxColliderCollection->GetComponent(entity2);
+            BoxCollider& boxCollider1 = boxColliderCollection.GetComponent(entity1);
+            BoxCollider& boxCollider2 = boxColliderCollection.GetComponent(entity2);
 
             //Perform AABB check, to test if entities are able to collide
             if (!boxCollider1.GetAABB(transform1, transformMeta1).Overlaps(boxCollider2.GetAABB(transform2, transformMeta2))) return false;
@@ -146,12 +144,12 @@ public:
 
       bool BoxPolygonCollision(ContactPair& contactPair, bool swap, Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2) const
       {
-            assert(boxColliderCollection->HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Box) attached");
-            assert(polygonColliderCollection->HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
+            assert(boxColliderCollection.HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Box) attached");
+            assert(polygonColliderCollection.HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
 
             //Get the components
-            BoxCollider& boxCollider1 = boxColliderCollection->GetComponent(entity1);
-            PolygonCollider& polygonCollider2 = polygonColliderCollection->GetComponent(entity2);
+            BoxCollider& boxCollider1 = boxColliderCollection.GetComponent(entity1);
+            PolygonCollider& polygonCollider2 = polygonColliderCollection.GetComponent(entity2);
 
             //Perform AABB check, to test if entities are able to collide
             if (!boxCollider1.GetAABB(transform1, transformMeta1).Overlaps(polygonCollider2.GetAABB(transform2, transformMeta2))) return false;
@@ -164,12 +162,12 @@ public:
 
       bool PolygonPolygonCollision(ContactPair& contactPair, Entity entity1, Entity entity2, Transform& transform1, Transform& transform2, TransformMeta& transformMeta1, TransformMeta& transformMeta2) const
       {
-            assert(polygonColliderCollection->HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
-            assert(polygonColliderCollection->HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
+            assert(polygonColliderCollection.HasComponent(entity1) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
+            assert(polygonColliderCollection.HasComponent(entity2) && "Collider type of rigidBody does not have the correct collider (Polygon) attached");
 
             //Get the components
-            PolygonCollider& polygonCollider1 = polygonColliderCollection->GetComponent(entity1);
-            PolygonCollider& polygonCollider2 = polygonColliderCollection->GetComponent(entity2);
+            PolygonCollider& polygonCollider1 = polygonColliderCollection.GetComponent(entity1);
+            PolygonCollider& polygonCollider2 = polygonColliderCollection.GetComponent(entity2);
 
             //Perform AABB check, to test if entities are able to collide
             if (!polygonCollider1.GetAABB(transform1, transformMeta1).Overlaps(polygonCollider2.GetAABB(transform2, transformMeta2))) return false;
@@ -607,9 +605,9 @@ private:
       }
 
 private:
-      ComponentCollection<CircleCollider>* circleColliderCollection;
-      ComponentCollection<BoxCollider>* boxColliderCollection;
-      ComponentCollection<PolygonCollider>* polygonColliderCollection;
+      ComponentCollection<CircleCollider>& circleColliderCollection;
+      ComponentCollection<BoxCollider>& boxColliderCollection;
+      ComponentCollection<PolygonCollider>& polygonColliderCollection;
 };
 
 //todo: validate shapes with ccw

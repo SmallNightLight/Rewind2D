@@ -136,7 +136,7 @@ public:
     }
 
     template<typename T>
-    inline constexpr ComponentCollection<T>* GetComponentCollection()
+    inline constexpr ComponentCollection<T>& GetComponentCollection()
     {
         return componentManager.template GetComponentCollection<T>();
     }

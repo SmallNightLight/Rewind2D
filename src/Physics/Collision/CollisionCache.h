@@ -77,12 +77,12 @@ public:
 
     //Caching
 
-    inline void CacheTransformCollection(ComponentCollection<Transform>* transformCollection)
+    inline void CacheTransformCollection(const ComponentCollection<Transform>& transformCollection)
     {
         transformCache[currentIndex].Cache(transformCollection);
     }
 
-    inline void CacheRigidBodyDataCollection(ComponentCollection<RigidBodyData>* rigidBodyDataCollection)
+    inline void CacheRigidBodyDataCollection(const ComponentCollection<RigidBodyData>& rigidBodyDataCollection)
     {
         rigidBodyDataCache[currentIndex].Cache(rigidBodyDataCollection);
     }
@@ -104,12 +104,12 @@ public:
 
     inline bool TryGetTransform(Entity entity, Transform& transform)
     {
-        return transformCache[currentIndex].TryGetTransform(entity, transform);
+        return transformCache[currentIndex].TryGetComponent(entity, transform);
     }
 
     inline bool TryGetRigidBodyData(Entity entity, RigidBodyData& result)
     {
-        return rigidBodyDataCache[currentIndex].TryGetTransform(entity, result);
+        return rigidBodyDataCache[currentIndex].TryGetComponent(entity, result);
     }
 
     inline constexpr bool AdvancePairCache(EntityPair entityPair) noexcept

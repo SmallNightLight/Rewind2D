@@ -8,7 +8,7 @@
 #include <cassert>
 #include <stdexcept>
 
-class ActionCollection
+class ActionCollection //todo use & instead of % and ^2
 {
 public:
     explicit ActionCollection(uint32_t frame = 0, uint32_t size = 15) : m_SaveCount(size), m_Actions(size), m_OldestFrame(frame), m_StartIndex(0), m_FrameCount(0), m_LastCompletedFrame(frame)

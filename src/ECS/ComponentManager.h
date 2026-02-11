@@ -28,7 +28,7 @@ public:
 
 	~ComponentManager()
 	{
-		(GetComponentCollection<Component>()->~ComponentCollection<Component>(), ...);
+		(GetComponentCollection<Component>().~ComponentCollection<Component>(), ...);
 	}
 
 	inline void Overwrite(const ComponentManager& other)
@@ -49,7 +49,7 @@ public:
 	inline T* AddComponent(Entity entity, T component)
 	{
 		static_assert(Contains_v<T, Components>, "Component T is not part of the specified components");
-        return GetComponentCollection<T>()->AddComponent(entity, component);
+        return GetComponentCollection<T>().AddComponent(entity, component);
 	}
 
     //Removes the component of type T from the given entity
@@ -57,7 +57,7 @@ public:
     inline void RemoveComponent(Entity entity)
     {
 		static_assert(Contains_v<T, Components>, "Component T is not part of the specified components");
-        GetComponentCollection<T>()->RemoveComponent(entity);
+        GetComponentCollection<T>().RemoveComponent(entity);
     }
 
     //Gets a reference to the component of type T for the given entity
@@ -65,7 +65,7 @@ public:
 	inline T& GetComponent(Entity entity)
 	{
 		static_assert(Contains_v<T, Components>, "Component T is not part of the specified components");
-        return GetComponentCollection<T>()->GetComponent(entity);
+        return GetComponentCollection<T>().GetComponent(entity);
 	}
 
     //Checks whether the given entity has the component of type T
@@ -73,7 +73,7 @@ public:
     inline bool HasComponent(Entity entity) const
     {
 		static_assert(Contains_v<T, Components>, "Component T is not part of the specified components");
-        return GetComponentCollection<T>()->HasComponent(entity);
+        return GetComponentCollection<T>().HasComponent(entity);
     }
 
     //Removes all components that are associated to the given entity
@@ -84,10 +84,10 @@ public:
 
 	//Gets the component collection for a specific component of type T
 	template<typename T>
-	inline constexpr ComponentCollection<T>* GetComponentCollection()
+	inline constexpr ComponentCollection<T>& GetComponentCollection()
 	{
 		static_assert(Contains_v<T, Components>, "Component T is not part of the specified components");
-		return reinterpret_cast<ComponentCollection<T>*>(&Data[ComponentOffset<T>]);
+		return *reinterpret_cast<ComponentCollection<T>*>(&Data[ComponentOffset<T>]);
 	}
 
 	static constexpr size_t GetComponentCount()

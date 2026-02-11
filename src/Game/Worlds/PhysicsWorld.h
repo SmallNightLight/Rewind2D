@@ -18,7 +18,16 @@
 class PhysicsWorld : public World
 {
 public:
-    explicit PhysicsWorld(PhysicsLayer& player, PhysicsWorldData& pPhysicsWorldData) : baseLayer(player), physicsWorldData(pPhysicsWorldData)
+    explicit PhysicsWorld(PhysicsLayer& player, PhysicsWorldData& pPhysicsWorldData) :
+        transformCollection(player.GetComponentCollection<Transform>()),
+        transformMetaCollection(player.GetComponentCollection<TransformMeta>()),
+        rigidBodyDataCollection(player.GetComponentCollection<RigidBodyData>()),
+        circleColliderCollection(player.GetComponentCollection<CircleCollider>()),
+        boxColliderCollection(player.GetComponentCollection<BoxCollider>()),
+        polygonColliderCollection(player.GetComponentCollection<PolygonCollider>()),
+        colliderRenderDataCollection(player.GetComponentCollection<ColliderRenderData>()),
+        movableCollection(player.GetComponentCollection<Movable>()),
+        baseLayer(player), physicsWorldData(pPhysicsWorldData)
     {
         SetupComponents(player);
         SetupSystems(player);
@@ -35,15 +44,6 @@ public:
     ///Registers all components to the layer, sets the component collections and creates a signature which includes all components
     void SetupComponents(PhysicsLayer& layer)
     {
-        transformCollection = layer.GetComponentCollection<Transform>();
-        transformMetaCollection = layer.GetComponentCollection<TransformMeta>();
-        rigidBodyDataCollection = layer.GetComponentCollection<RigidBodyData>();
-        circleColliderCollection = layer.GetComponentCollection<CircleCollider>();
-        boxColliderCollection = layer.GetComponentCollection<BoxCollider>();
-        polygonColliderCollection = layer.GetComponentCollection<PolygonCollider>();
-        colliderRenderDataCollection = layer.GetComponentCollection<ColliderRenderData>();
-        movableCollection = layer.GetComponentCollection<Movable>();
-
         //Create a signature that has all component flags
         includedComponents = 0;
         includedComponents.set(PhysicsComponentManager::GetComponentType<Transform>(), true);
@@ -318,7 +318,7 @@ private:
         }
     }
 
-    void UpdateTransform(const std::vector<Entity>& entities, const std::vector<PhysicsSignature>& signatures) const //todo important remove and dont serz transformed
+    void UpdateTransform(const std::vector<Entity>& entities, const std::vector<PhysicsSignature>& signatures) const //todo important remove and dont set transformed
     {
         ComponentType circleColliderComponentType = PhysicsComponentManager::GetComponentType<CircleCollider>();
         ComponentType boxColliderComponentType = PhysicsComponentManager::GetComponentType<BoxCollider>();
@@ -333,7 +333,7 @@ private:
 
             if (signature.test(boxColliderComponentType))
             {
-                BoxCollider& boxCollider = boxColliderCollection->GetComponent(entity);
+                BoxCollider& boxCollider = boxColliderCollection.GetComponent(entity);
                 //boxCollider.GetTransformedVertices()
                 //transformCollection->GetComponent(entities[i]).GetTransformedVertices(boxCollider.GetTransformedVertices(), boxCollider.GetVertices());
             }
@@ -347,7 +347,7 @@ private:
     }
 
     template<typename Component>
-    static void SerializeComponentCollection(Stream& stream, ComponentCollection<Component>* componentCollection, const std::vector<Entity>& entities, const std::vector<PhysicsSignature>& signatures)
+    static void SerializeComponentCollection(Stream& stream, const ComponentCollection<Component>& componentCollection, const std::vector<Entity>& entities, const std::vector<PhysicsSignature>& signatures)
     {
         //Write the componentType
         ComponentType componentType = PhysicsComponentManager::GetComponentType<Component>();
@@ -356,7 +356,7 @@ private:
         stream.WriteInteger(componentType);
 
         //Write the entity count of the component collection
-        stream.WriteInteger(componentCollection->GetEntityCount());
+        stream.WriteInteger(componentCollection.GetEntityCount());
 
         //Write the entity and the component Data
         for (int i = 0; i < entities.size(); ++i)
@@ -364,7 +364,7 @@ private:
             if ((signatures[i] & componentSignature).any())
             {
                 stream.WriteInteger(entities[i]);
-                componentCollection->GetComponent(entities[i]).Serialize(stream);
+                componentCollection.GetComponent(entities[i]).Serialize(stream);
             }
         }
     }
@@ -443,7 +443,7 @@ private:
         uint32_t entityCount = stream.ReadInteger<uint32_t>();
         uint32_t signaturesCount = signatures.size();
 
-        ComponentCollection<Component>* componentCollection = physicsLayer.GetComponentCollection<Component>();
+        //ComponentCollection<Component>& componentCollection = physicsLayer.GetComponentCollection<Component>();
 
         //Read the entity and the component Data
         for (int i = 0; i < entityCount; ++i)
@@ -522,14 +522,14 @@ private:
     MovingSystem* movingSystem;
 
     //Components
-    ComponentCollection<Transform>* transformCollection;
-    ComponentCollection<TransformMeta>* transformMetaCollection;
-    ComponentCollection<RigidBodyData>* rigidBodyDataCollection;
-    ComponentCollection<CircleCollider>* circleColliderCollection;
-    ComponentCollection<BoxCollider>* boxColliderCollection;
-    ComponentCollection<PolygonCollider>* polygonColliderCollection;
-    ComponentCollection<ColliderRenderData>* colliderRenderDataCollection;
-    ComponentCollection<Movable>* movableCollection;
+    ComponentCollection<Transform>& transformCollection;
+    ComponentCollection<TransformMeta>& transformMetaCollection;
+    ComponentCollection<RigidBodyData>& rigidBodyDataCollection;
+    ComponentCollection<CircleCollider>& circleColliderCollection;
+    ComponentCollection<BoxCollider>& boxColliderCollection;
+    ComponentCollection<PolygonCollider>& polygonColliderCollection;
+    ComponentCollection<ColliderRenderData>& colliderRenderDataCollection;
+    ComponentCollection<Movable>& movableCollection;
 
     PhysicsSignature includedComponents;
 

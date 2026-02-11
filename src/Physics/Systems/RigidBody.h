@@ -14,18 +14,15 @@ class RigidBody
 public:
     using RequiredComponents = ComponentList<Transform, TransformMeta, RigidBodyData>;
 
-    explicit RigidBody(PhysicsComponentManager& componentManager) : collisionDetection(componentManager), useCache(false) //TODO: Static objects should not need to have a rigidBody
+    explicit RigidBody(PhysicsComponentManager& componentManager) : //TODO: Static objects should not need to have a rigidBody
+        transformCollection(componentManager.GetComponentCollection<Transform>()),
+        transformMetaCollection(componentManager.GetComponentCollection<TransformMeta>()),
+        rigidBodyDataCollection(componentManager.GetComponentCollection<RigidBodyData>()),
+        circleColliderCollection(componentManager.GetComponentCollection<CircleCollider>()),
+        boxColliderCollection(componentManager.GetComponentCollection<BoxCollider>()),
+        polygonColliderCollection(componentManager.GetComponentCollection<PolygonCollider>()),
+        collisionDetection(componentManager), useCache(false), collisionCache(nullptr), physicsCache(nullptr)
     {
-        transformCollection = componentManager.GetComponentCollection<Transform>();
-        transformMetaCollection = componentManager.GetComponentCollection<TransformMeta>();
-        rigidBodyDataCollection = componentManager.GetComponentCollection<RigidBodyData>();
-        circleColliderCollection = componentManager.GetComponentCollection<CircleCollider>();
-        boxColliderCollection = componentManager.GetComponentCollection<BoxCollider>();
-        polygonColliderCollection = componentManager.GetComponentCollection<PolygonCollider>();
-
-        collisionCache = nullptr;
-        physicsCache = nullptr;
-
         Entities.Initialize();
     }
 
@@ -53,7 +50,7 @@ public:
         for (Entity* it1 = Entities.begin(); it1 != Entities.end(); ++it1)
         {
             const Entity& entity1 = *it1;
-            Transform& transform1 = transformCollection->GetComponent(entity1);
+            Transform& transform1 = transformCollection.GetComponent(entity1);
 
             //Detect collisions
             for (Entity* it2 = std::next(it1); it2 != Entities.end(); ++it2)
@@ -62,7 +59,7 @@ public:
 
                 //todo Entity pairs should be ordered (currently is)
 
-                Transform& transform2 = transformCollection->GetComponent(entity2);
+                Transform& transform2 = transformCollection.GetComponent(entity2);
                 EntityPair entityPair = EntityPair::Make(entity1, entity2);
                 //std::cout << entityPair.Key << std::endl;
                 //Check if collision already occurred in the past
@@ -83,10 +80,10 @@ public:
                     continue;
                 }
 
-                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(entity1);
-                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(entity2);
-                TransformMeta& transformMeta1 = transformMetaCollection->GetComponent(entity1);
-                TransformMeta& transformMeta2 = transformMetaCollection->GetComponent(entity2);
+                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection.GetComponent(entity1);
+                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection.GetComponent(entity2);
+                TransformMeta& transformMeta1 = transformMetaCollection.GetComponent(entity1);
+                TransformMeta& transformMeta2 = transformMetaCollection.GetComponent(entity2);
 
                 ContactPair contactPair = ContactPair();    //Value initialization to give the impulses zero values
                 if (collisionDetection.DetectCollision(entity1, entity2, transform1, transform2, transformMeta1, transformMeta2, contactPair))
@@ -116,12 +113,12 @@ public:
             {
                 if (collisionCache->TryGetTransform(entity, cachedTransform))
                 {
-                    Transform& transform = transformCollection->GetComponent(entity);
+                    Transform& transform = transformCollection.GetComponent(entity);
                     transform.Changed = transform.Key != cachedTransform.Key;
                 }
                 else
                 {
-                    transformCollection->GetComponent(entity).Changed = true;
+                    transformCollection.GetComponent(entity).Changed = true;
                 }
             }
 
@@ -144,7 +141,7 @@ public:
         {
             for (const Entity& entity : Entities)
             {
-                transformCollection->GetComponent(entity).Changed = true;
+                transformCollection.GetComponent(entity).Changed = true;
             }
         }
     }
@@ -200,11 +197,11 @@ public:
     {
         for (const Entity& entity : Entities)
         {
-            TransformMeta& transformMeta = transformMetaCollection->GetComponent(entity);
+            TransformMeta& transformMeta = transformMetaCollection.GetComponent(entity);
 
             if (transformMeta.IsStatic) continue;
 
-            RigidBodyData& rigidBodyData = rigidBodyDataCollection->GetComponent(entity);
+            RigidBodyData& rigidBodyData = rigidBodyDataCollection.GetComponent(entity);
 
             rigidBodyData.Base.Velocity += (Gravity + rigidBodyData.Force * rigidBodyData.InverseMass) * deltaTime;
             //rigidBodyData.AngularVelocity += deltaTime * rigidBodyData.InverseInertia * rigidBodyData.Torque; //todo
@@ -219,8 +216,8 @@ public:
         {
             for (ContactPair& contactPair : ContactPairs)
             {
-                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity1());
-                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity2());
+                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection.GetComponent(contactPair.EntityKey.Entity1());
+                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection.GetComponent(contactPair.EntityKey.Entity2());
 
                 for (int i = 0; i < contactPair.ContactCount; ++i)
                 {
@@ -244,8 +241,8 @@ public:
     {
         for (ContactPair& contactPair : ContactPairs)
         {
-            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity1());
-            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(contactPair.EntityKey.Entity2());
+            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection.GetComponent(contactPair.EntityKey.Entity1());
+            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection.GetComponent(contactPair.EntityKey.Entity2());
 
             for (int i = 0; i < contactPair.ContactCount; ++i)
             {
@@ -320,12 +317,12 @@ public:
     {
         for (const Entity& entity : Entities)
         {
-            TransformMeta& transformMeta = transformMetaCollection->GetComponent(entity);
+            TransformMeta& transformMeta = transformMetaCollection.GetComponent(entity);
 
             if (transformMeta.IsStatic) continue;
 
-            Transform& transform = transformCollection->GetComponent(entity);
-            RigidBodyData& rigidBodyData = rigidBodyDataCollection->GetComponent(entity);
+            Transform& transform = transformCollection.GetComponent(entity);
+            RigidBodyData& rigidBodyData = rigidBodyDataCollection.GetComponent(entity);
 
             transform.MovePosition(rigidBodyData.Base.Velocity * deltaTime);
             transform.Rotate(rigidBodyData.Base.AngularVelocity * deltaTime);
@@ -344,12 +341,12 @@ public:
             Entity entity1 = contactPair.EntityKey.Entity1();
             Entity entity2 = contactPair.EntityKey.Entity2();
 
-            TransformMeta& transformMeta1 = transformMetaCollection->GetComponent(entity1);     //todo the static check is not worth the access also above
-            TransformMeta& transformMeta2 = transformMetaCollection->GetComponent(entity2);
-            Transform& transform1 = transformCollection->GetComponent(entity1);
-            Transform& transform2 = transformCollection->GetComponent(entity2);
-            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection->GetComponent(entity1);
-            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection->GetComponent(entity2);
+            TransformMeta& transformMeta1 = transformMetaCollection.GetComponent(entity1);     //todo the static check is not worth the access also above
+            TransformMeta& transformMeta2 = transformMetaCollection.GetComponent(entity2);
+            Transform& transform1 = transformCollection.GetComponent(entity1);
+            Transform& transform2 = transformCollection.GetComponent(entity2);
+            RigidBodyData& rigidBodyData1 = rigidBodyDataCollection.GetComponent(entity1);
+            RigidBodyData& rigidBodyData2 = rigidBodyDataCollection.GetComponent(entity2);
 
             for (uint8_t i = 0; i < contactPair.ContactCount; ++i)
             {
@@ -399,14 +396,14 @@ private:
     }
 
 private:
-    CollisionDetection collisionDetection;
+    ComponentCollection<Transform>& transformCollection;
+    ComponentCollection<TransformMeta>& transformMetaCollection;
+    ComponentCollection<RigidBodyData>& rigidBodyDataCollection;
+    ComponentCollection<CircleCollider>& circleColliderCollection;
+    ComponentCollection<BoxCollider>& boxColliderCollection;
+    ComponentCollection<PolygonCollider>& polygonColliderCollection;
 
-    ComponentCollection<Transform>* transformCollection;
-    ComponentCollection<TransformMeta>* transformMetaCollection;
-    ComponentCollection<RigidBodyData>* rigidBodyDataCollection;
-    ComponentCollection<CircleCollider>* circleColliderCollection;
-    ComponentCollection<BoxCollider>* boxColliderCollection;
-    ComponentCollection<PolygonCollider>* polygonColliderCollection;
+    CollisionDetection collisionDetection;
 
     //Caching
     CollisionCache* collisionCache;

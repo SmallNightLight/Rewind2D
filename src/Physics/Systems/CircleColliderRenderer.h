@@ -11,13 +11,12 @@ class CircleColliderRenderer
 public:
     using RequiredComponents = ComponentList<Transform, CircleCollider, ColliderRenderData>;
 
-    explicit CircleColliderRenderer(PhysicsComponentManager& componentManager)
+    explicit CircleColliderRenderer(PhysicsComponentManager& componentManager) :
+        transformCollection(componentManager.GetComponentCollection<Transform>()),
+        transformMetaCollection(componentManager.GetComponentCollection<TransformMeta>()),
+        circleColliderCollection(componentManager.GetComponentCollection<CircleCollider>()),
+        colliderRenderDataCollection(componentManager.GetComponentCollection<ColliderRenderData>())
     {
-        transformCollection = componentManager.GetComponentCollection<Transform>();
-        transformMetaCollection = componentManager.GetComponentCollection<TransformMeta>();
-        circleColliderCollection = componentManager.GetComponentCollection<CircleCollider>();
-        colliderRenderDataCollection = componentManager.GetComponentCollection<ColliderRenderData>();
-
         Entities.Initialize();
     }
 
@@ -25,9 +24,9 @@ public:
     {
         for (const Entity& entity : Entities)
         {
-            Transform& transform = transformCollection->GetComponent(entity);
-            CircleCollider& circleCollider = circleColliderCollection->GetComponent(entity);
-            ColliderRenderData& colliderRenderData = colliderRenderDataCollection->GetComponent(entity);
+            Transform& transform = transformCollection.GetComponent(entity);
+            CircleCollider& circleCollider = circleColliderCollection.GetComponent(entity);
+            ColliderRenderData& colliderRenderData = colliderRenderDataCollection.GetComponent(entity);
 
             SDL_Color color = {colliderRenderData.R, colliderRenderData.G, colliderRenderData.B, SDL_ALPHA_OPAQUE};
             SDL_FColor colorF = ToFColor(color);    //todo only do once when creation
@@ -125,10 +124,10 @@ public:
     }
 
 private:
-    ComponentCollection<Transform>* transformCollection;
-    ComponentCollection<TransformMeta>* transformMetaCollection;        //Only for debug todo: remove reference in release build
-    ComponentCollection<CircleCollider>* circleColliderCollection;
-    ComponentCollection<ColliderRenderData>* colliderRenderDataCollection;
+    ComponentCollection<Transform>& transformCollection;
+    ComponentCollection<TransformMeta>& transformMetaCollection;        //Only for debug todo: remove reference in release build
+    ComponentCollection<CircleCollider>& circleColliderCollection;
+    ComponentCollection<ColliderRenderData>& colliderRenderDataCollection;
 
 public:
     EntitySet<s_MaxEntities> Entities;

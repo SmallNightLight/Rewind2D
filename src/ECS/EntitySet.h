@@ -1,105 +1,97 @@
 #pragma once
 
-#include "ECSSettings.h"
-
 #include <cstdint>
 #include <cassert>
 #include <array>
 #include <cstring>
 
-template<uint32_t Capacity>
+#include "ECSSettings.h"
+
+template<uint32_t N_Capacity>
 class EntitySet
 {
 public:
-    inline EntitySet() noexcept = default;
+    constexpr EntitySet() noexcept = default;
+    EntitySet(const EntitySet&) noexcept = default;
+    EntitySet& operator=(const EntitySet&) noexcept = default;
 
-    inline void Initialize()
+    constexpr void Initialize() noexcept
     {
-        entityToIndex.fill(InvalidEntity);
-        entityCount = 0;
+        m_EntityToIndex.fill(s_InvalidEntity);
+        m_EntityCount = 0;
     }
 
-    EntitySet& operator=(const EntitySet& other)
-    {
-        if (this == &other) return *this;
-
-        entityCount = other.entityCount;
-
-        std::memcpy(entities.data(), other.entities.data(), entityCount * sizeof(Entity));
-        std::memcpy(entityToIndex.data(), other.entityToIndex.data(), entityToIndex.size() * sizeof(uint32_t));
-
-        return *this;
-    }
-
-    bool Insert(Entity entity)
+    constexpr bool Insert(Entity entity)
     {
         assert(entity < s_MaxEntities && "Entity out of range");
 
-        if (entityToIndex[entity] != InvalidEntity) return false;
+        if (m_EntityToIndex[entity] != s_InvalidEntity) return false;
 
-        assert(entityCount < Capacity && "EntitySet capacity exceeded");
+        assert(m_EntityCount < Capacity && "EntitySet capacity exceeded");
 
-        uint32_t index = entityCount++;
-        entities[index] = entity;
-        entityToIndex[entity] = index;
+        uint32_t index = m_EntityCount++;
+        m_Entities[index] = entity;
+        m_EntityToIndex[entity] = index;
 
         return true;
     }
 
-    //Removes the entity from the given entity
-    void Erase(Entity entity)
+    //Removes the entity from the set
+    constexpr void Erase(Entity entity)
     {
         assert(entity < s_MaxEntities && "Entity out of range");
 
-        uint32_t index = entityToIndex[entity];
+        uint32_t index = m_EntityToIndex[entity];
 
-        if (index == InvalidEntity) return;
+        if (m_EntityCount == 0 || index == s_InvalidEntity) return;
 
-        uint32_t lastIndex = entityCount - 1;  //TODO: range exception
-        Entity lastEntity = entities[lastIndex];
+        uint32_t lastIndex = m_EntityCount - 1;
+        Entity lastEntity = m_Entities[lastIndex];
 
         //Swap the last entity into the removed spot
-        entities[index] = lastEntity;
-        entityToIndex[lastEntity] = index;
+        m_Entities[index] = lastEntity;
+        m_EntityToIndex[lastEntity] = index;
 
         //Invalidate the removed entity
-        entityToIndex[entity] = InvalidEntity;
-        entityCount--;
+        m_EntityToIndex[entity] = s_InvalidEntity;
+        --m_EntityCount;
     }
 
-    inline bool Contains(Entity entity) const
+    [[nodiscard]] constexpr bool Contains(Entity entity) const
     {
         assert(entity < s_MaxEntities && "Entity out of range");
-        return entityToIndex[entity] != InvalidEntity;
+        return m_EntityToIndex[entity] != s_InvalidEntity;
     }
 
-    void Clear()
+    constexpr void Clear() noexcept
     {
-        for (uint32_t i = 0; i < entityCount; ++i)
-        {
-            entityToIndex[entities[i]] = InvalidEntity;
-        }
-
-        entityCount = 0;
+        m_EntityToIndex.fill(s_InvalidEntity);
+        m_EntityCount = 0;
     }
 
-    uint32_t Size() const { return entityCount; }
+    // more optimized then the assignment operator
+    void Overwrite(const EntitySet& other) noexcept
+    {
+        if (this == &other) return;
 
-    bool Empty() const { return entityCount == 0; }
+        std::memcpy(m_Entities.data(), other.m_Entities.data(), other.m_EntityCount * sizeof(Entity));
+        std::memcpy(m_EntityToIndex.data(), other.m_EntityToIndex.data(), m_EntityToIndex.size() * sizeof(uint32_t));
+        m_EntityCount = other.m_EntityCount;
+    }
 
-    Entity* begin() { return entities.data(); }
-    Entity* end() { return entities.data() + entityCount; }
+    [[nodiscard]] constexpr uint32_t Size() const noexcept { return m_EntityCount; }
+    [[nodiscard]] constexpr bool Empty() const noexcept { return m_EntityCount == 0; }
+    static constexpr uint32_t Capacity = N_Capacity;
 
-    const Entity* begin() const { return entities.data(); }
-    const Entity* end() const { return entities.data() + entityCount; }
+    [[nodiscard]] constexpr Entity* begin() noexcept { return m_Entities.data(); }
+    [[nodiscard]] constexpr Entity* end() noexcept { return m_Entities.data() + m_EntityCount; }
+    [[nodiscard]] constexpr const Entity* begin() const noexcept { return m_Entities.data(); }
+    [[nodiscard]] constexpr const Entity* end() const noexcept { return m_Entities.data() + m_EntityCount; }
 
 private:
-    static constexpr uint32_t InvalidEntity = Capacity;
-
-    std::array<Entity, Capacity> entities;
-    std::array<uint32_t, s_MaxEntities> entityToIndex;
-
-    uint32_t entityCount;
+    std::array<Entity, Capacity> m_Entities;
+    std::array<uint32_t, s_MaxEntities> m_EntityToIndex;
+    uint32_t m_EntityCount;
 };
 
-static_assert(std::is_trivially_default_constructible_v<EntitySet<10>>, "EntitySet needs to be trivial");
+static_assert(IsTrivial<EntitySet<10>>, "EntitySet needs to be trivial");

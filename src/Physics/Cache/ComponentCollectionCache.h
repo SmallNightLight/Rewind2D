@@ -11,13 +11,13 @@ public:
         filled = false;
     }
 
-    inline void Cache(ComponentCollection<T>* collection)
+    inline void Cache(const ComponentCollection<T>& collection)
     {
         filled = true;
         data.Overwrite(collection);
     }
 
-    inline bool TryGetTransform(Entity entity, T& result)
+    inline bool TryGetComponent(Entity entity, T& result)
     {
         if (!filled) return false;
 

@@ -2,10 +2,9 @@
 
 #include <array>
 #include <cstdint>
-#include <cstring>
 #include <cassert>
 
-template <uint32_t N>
+template <uint32_t N_Capacity>
 class Bitset
 {
 public:
@@ -20,71 +19,76 @@ public:
         }
     }
 
-    inline void Clear() noexcept
+    constexpr void SetTrue(uint32_t index) noexcept
     {
-        std::memset(m_Data.data(), 0, sizeof(m_Data));
-    }
-
-    inline void SetTrue(uint32_t index) noexcept
-    {
-        assert(index < N && "Index in bitset out of range");
+        assert(index < Capacity && "Index in bitset out of range");
         m_Data[index >> 6] |= 1ull << (index & 63);
     }
 
-    inline void SetFalse(uint32_t index) noexcept
+    constexpr void SetFalse(uint32_t index) noexcept
     {
-        assert(index < N && "Index in bitset out of range");
+        assert(index < Capacity && "Index in bitset out of range");
         m_Data[index >> 6] &= ~(1ull << (index & 63));
     }
 
-    inline void Set(uint32_t index, bool value) noexcept
+    constexpr void Set(uint32_t index, bool value) noexcept
     {
-        if (value) SetTrue(index);
-        else SetFalse(index);
+        assert(index < Capacity && "Index in bitset out of range");
+        uint64_t mask = 1ull << (index & 63);
+        uint64_t& word = m_Data[index >> 6];
+        word = (word & ~mask) | (-static_cast<uint64_t>(value) & mask);
     }
 
-    [[nodiscard]] inline bool Test(uint32_t index) const noexcept
+    [[nodiscard]] constexpr bool Test(uint32_t index) const noexcept
     {
-        assert(index < N && "Index in bitset out of range");
+        assert(index < Capacity && "Index in bitset out of range");
         return (m_Data[index >> 6] >> (index & 63)) & 1ull;
     }
 
-    [[nodiscard]] inline bool operator[](uint32_t index) const noexcept
+    constexpr void Clear() noexcept
     {
-        assert(index < N && "Index in bitset out of range");
+        m_Data.fill(0);
+    }
+
+    constexpr void SetAll() noexcept
+    {
+        m_Data.fill(~0ull);
+    }
+
+    [[nodiscard]] constexpr bool operator[](uint32_t index) const noexcept
+    {
+        assert(index < Capacity && "Index in bitset out of range");
         return (m_Data[index >> 6] >> (index & 63)) & 1ull;
     }
 
-    [[nodiscard]] static constexpr inline uint32_t Size() noexcept
+    [[nodiscard]] constexpr uint32_t NextIndex(uint32_t start = 0) const noexcept
     {
-        return N;
-    }
-
-    [[nodiscard]] inline uint32_t NextIndex(uint32_t start = 0) const noexcept
-    {
-        if (start >= N) return N;
+        if (start >= Capacity) return Capacity;
 
         uint32_t index = start >> 6;
         uint32_t bitOffset = start & 63;
         uint64_t bits = m_Data[index] & (~0ull << bitOffset);
 
-        while (true)
+        while (index < WordCount)
         {
             if (bits != 0)
             {
-                return (index << 6) + std::countr_zero(bits);
+                uint32_t result = (index << 6) + std::countr_zero(bits);
+                return result < Capacity ? result : Capacity;
             }
 
-            if (++index >= WordCount) return N;
-
-            bits = m_Data[index];
+            bits = m_Data[++index];
         }
+
+        return Capacity;
     }
+
+    static constexpr uint32_t Capacity = N_Capacity;
 
 private:
     static constexpr uint32_t BitsPerWord = 64;
-    static constexpr uint32_t LastBits = N % BitsPerWord;
-    static constexpr uint32_t WordCount = (N + BitsPerWord - 1) / BitsPerWord;
+    static constexpr uint32_t LastBits = Capacity % BitsPerWord;
+    static constexpr uint32_t WordCount = (Capacity + BitsPerWord - 1) / BitsPerWord;
 
     std::array<uint64_t, WordCount> m_Data { };
 };

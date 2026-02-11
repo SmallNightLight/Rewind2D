@@ -9,11 +9,10 @@ class MovingSystem
 public:
     using RequiredComponents = ComponentList<Transform, Movable>;
 
-    explicit MovingSystem(PhysicsComponentManager& componentManager)
+    explicit MovingSystem(PhysicsComponentManager& componentManager) :
+        transformCollection(componentManager.GetComponentCollection<Transform>()),
+        movableCollection(componentManager.GetComponentCollection<Movable>())
     {
-        transformCollection = componentManager.GetComponentCollection<Transform>();
-        movableCollection = componentManager.GetComponentCollection<Movable>();
-
         Entities.Initialize();
     }
 
@@ -21,8 +20,8 @@ public:
     {
         for (const Entity& entity : Entities)
         {
-            Transform& transform = transformCollection->GetComponent(entity);
-            Movable& movable = movableCollection->GetComponent(entity);
+            Transform& transform = transformCollection.GetComponent(entity);
+            Movable& movable = movableCollection.GetComponent(entity);
 
             Vector2 velocity = Vector2::Zero();
             Fixed16_16 angularVelocity = Fixed16_16(0);
@@ -62,8 +61,8 @@ public:
     }
 
 private:
-    ComponentCollection<Transform>* transformCollection;
-    ComponentCollection<Movable>* movableCollection;
+    ComponentCollection<Transform>& transformCollection;
+    ComponentCollection<Movable>& movableCollection;
 
 public:
     EntitySet<s_MaxEntities> Entities;

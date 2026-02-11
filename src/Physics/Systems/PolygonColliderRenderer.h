@@ -11,13 +11,12 @@ class PolygonColliderRenderer
 public:
     using RequiredComponents = ComponentList<Transform, PolygonCollider, ColliderRenderData>;
 
-    explicit PolygonColliderRenderer(PhysicsComponentManager& componentManager)
+    explicit PolygonColliderRenderer(PhysicsComponentManager& componentManager) :
+        transformCollection(componentManager.GetComponentCollection<Transform>()),
+        transformMetaCollection(componentManager.GetComponentCollection<TransformMeta>()),
+        polygonColliderCollection(componentManager.GetComponentCollection<PolygonCollider>()),
+        colliderRenderDataCollection(componentManager.GetComponentCollection<ColliderRenderData>())
     {
-        transformCollection = componentManager.GetComponentCollection<Transform>();
-        transformMetaCollection = componentManager.GetComponentCollection<TransformMeta>();
-        polygonColliderCollection = componentManager.GetComponentCollection<PolygonCollider>();
-        colliderRenderDataCollection = componentManager.GetComponentCollection<ColliderRenderData>();
-
         Entities.Initialize();
     }
 
@@ -25,9 +24,9 @@ public:
     {
         for (const Entity& entity : Entities)
         {
-            Transform& transform = transformCollection->GetComponent(entity);
-            PolygonCollider& polygonCollider = polygonColliderCollection->GetComponent(entity);
-            ColliderRenderData& colliderRenderData = colliderRenderDataCollection->GetComponent(entity);
+            Transform& transform = transformCollection.GetComponent(entity);
+            PolygonCollider& polygonCollider = polygonColliderCollection.GetComponent(entity);
+            ColliderRenderData& colliderRenderData = colliderRenderDataCollection.GetComponent(entity);
 
             SDL_Color color = {colliderRenderData.R, colliderRenderData.G, colliderRenderData.B, SDL_ALPHA_OPAQUE};
             SDL_FColor colorF = ToFColor(color);    //todo only do once when creation
@@ -113,10 +112,10 @@ public:
     }
 
 private:
-    ComponentCollection<Transform>* transformCollection;
-    ComponentCollection<TransformMeta>* transformMetaCollection;        //Only for debug todo: remove reference in release build
-    ComponentCollection<PolygonCollider>* polygonColliderCollection;
-    ComponentCollection<ColliderRenderData>* colliderRenderDataCollection;
+    ComponentCollection<Transform>& transformCollection;
+    ComponentCollection<TransformMeta>& transformMetaCollection;        //Only for debug todo: remove reference in release build
+    ComponentCollection<PolygonCollider>& polygonColliderCollection;
+    ComponentCollection<ColliderRenderData>& colliderRenderDataCollection;
 
 public:
     EntitySet<s_MaxEntities> Entities;
