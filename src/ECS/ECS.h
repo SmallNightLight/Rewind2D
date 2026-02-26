@@ -4,7 +4,7 @@
 #include "EntityPair.h"
 
 #include "EntitySet.h"
-#include "EntityQueue.h"
+#include "Queue.h"
 
 #include "EntityManager.h"
 #include "ComponentCollection.h"

@@ -32,4 +32,6 @@ struct EntityPair
     }
 };
 
+static constexpr EntityPair s_InvalidEntityPair = EntityPair::Make(s_InvalidEntity, s_InvalidEntity);
+
 static_assert(IsTrivial<EntityPair>, "EntityPair needs to be trivial");

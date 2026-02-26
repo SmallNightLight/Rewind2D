@@ -5,7 +5,7 @@ add_library(ECS INTERFACE
         ECS.h
         ECSSettings.h
         TypeList.h
-        EntityQueue.h
+        Queue.h
         EntitySet.h
         EntityPair.h
         EntityManager.h

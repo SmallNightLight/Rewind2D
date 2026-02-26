@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EntityQueue.h"
+#include "Queue.h"
 #include "ECSSettings.h"
 
 #include <bitset>

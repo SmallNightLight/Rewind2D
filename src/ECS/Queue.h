@@ -4,39 +4,37 @@
 #include <cassert>
 #include <bit>
 
-#include "ECSSettings.h"
-
-template<uint32_t N_Capacity>
+template<typename T, uint32_t N_Capacity>
     requires (N_Capacity > 0 && std::has_single_bit(N_Capacity))
-class EntityQueue
+class Queue
 {
 public:
-    constexpr EntityQueue() noexcept = default;
+    constexpr Queue() noexcept = default;
 
-    constexpr void Push(Entity value) noexcept
+    constexpr void Push(T value) noexcept
     {
-        assert(m_Size < N_Capacity && "EntityQueue overflow");
+        assert(m_Size < N_Capacity && "Queue overflow");
         m_Data[(m_Head + m_Size) & s_Mask] = value;
         ++m_Size;
     }
 
-    [[nodiscard]] constexpr Entity Front() const noexcept
+    [[nodiscard]] constexpr T Front() const noexcept
     {
-        assert(m_Size > 0 && "EntityQueue is empty");
+        assert(m_Size > 0 && "Queue is empty");
         return m_Data[m_Head];
     }
 
     constexpr void Pop() noexcept
     {
-        assert(m_Size > 0 && "EntityQueue is empty");
+        assert(m_Size > 0 && "Queue is empty");
         m_Head = (m_Head + 1) & s_Mask;
         --m_Size;
     }
 
-    [[nodiscard]] constexpr Entity Dequeue() noexcept
+    [[nodiscard]] constexpr T Dequeue() noexcept
     {
-        assert(m_Size > 0 && "EntityQueue is empty");
-        Entity value = m_Data[m_Head];
+        assert(m_Size > 0 && "Queue is empty");
+        T value = m_Data[m_Head];
         m_Head = (m_Head + 1) & s_Mask;
         --m_Size;
         return value;
@@ -56,7 +54,7 @@ public:
 private:
     static constexpr uint32_t s_Mask = N_Capacity - 1;
 
-    std::array<Entity, N_Capacity> m_Data { };
+    std::array<T, N_Capacity> m_Data { };
     uint32_t m_Head = 0;
     uint32_t m_Size = 0;
 };
