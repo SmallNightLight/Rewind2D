@@ -127,7 +127,7 @@ public:
 
         for (uint8_t i = 0; i < PhysicsIterations; ++i)
         {
-            rigidBodySystem->SolveContacts();
+            rigidBodySystem->SolveContacts(deltaTime);
         }
 
         rigidBodySystem->IntegrateVelocities(deltaTime);

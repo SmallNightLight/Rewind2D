@@ -4,10 +4,10 @@
 #include "../PhysicsSettings.h"
 #include "../Collision/CollisionDetection.h"
 
-#include <immintrin.h>
 #include <vector>
 
-#include "../Cache/ContactCache2.h"
+#include "../Additional/IslandManager.h"
+//#include "../Cache/ContactCache2.h"
 
 class RigidBody
 {
@@ -45,9 +45,8 @@ public:
         //Setup transform from cache
         SetupEntityTransforms(useCache);
         collisionCache->CacheTransformCollection(transformCollection);
-        //collisionCache->CacheRigidBodyDataCollection(rigidBodyDataCollection);
 
-        for (Entity* it1 = Entities.begin(); it1 != Entities.end(); ++it1)
+        for (Entity* it1 = Entities.begin(); it1 != Entities.end(); ++it1) //todo IMPORTANT entityset is not sorted!
         {
             const Entity& entity1 = *it1;
             Transform& transform1 = transformCollection.GetComponent(entity1);
@@ -88,7 +87,6 @@ public:
                 ContactPair contactPair = ContactPair();    //Value initialization to give the impulses zero values
                 if (collisionDetection.DetectCollision(entity1, entity2, transform1, transform2, transformMeta1, transformMeta2, contactPair))
                 {
-                    SetupContactPair(contactPair, rigidBodyData1, rigidBodyData2);
                     ContactPairs.emplace_back(contactPair);
                     collisionCache->CacheCollisionPair(entityPair);
                     collisionCache->CacheCollision(contactPair);
@@ -98,11 +96,7 @@ public:
                 //Only possible since we first check if the entity has changed during rollback
             }
         }
-
-        //contactCache.CreateGroup(ContactPairs);
     }
-
-    ContactCache2<s_MaxEntities, s_MaxEntities * 2> contactCache { };
 
     void SetupEntityTransforms(bool useCache) //optimize inline in the handlecol? todo divide into two bools for both
     {
@@ -121,21 +115,6 @@ public:
                     transformCollection.GetComponent(entity).Changed = true;
                 }
             }
-
-            //Not needed as it only stores contact pairs currently
-            // RigidBodyData cachedRigidBodyData;
-            // for (const Entity& entity : Entities)
-            // {
-            //     if (collisionCache->TryGetRigidBodyData(entity, cachedRigidBodyData))
-            //     {
-            //         RigidBodyData& rigidBodyData = rigidBodyDataCollection->GetComponent(entity);
-            //         rigidBodyData.Changed = rigidBodyData.Key != cachedRigidBodyData.Key;
-            //     }
-            //     else
-            //     {
-            //         rigidBodyDataCollection->GetComponent(entity).Changed = true;
-            //     }
-            // }
         }
         else
         {
@@ -143,53 +122,6 @@ public:
             {
                 transformCollection.GetComponent(entity).Changed = true;
             }
-        }
-    }
-
-    inline void SetupContactPair(ContactPair& contactPair, const RigidBodyData& rigidBodyData1, const RigidBodyData& rigidBodyData2) const
-    {
-        if (contactPair.ContactCount == 0) return; //todo remove actually gets called
-
-        //Apply previous impulses
-        if (WarmStarting)
-        {
-            ImpulseData lastImpulseData;
-
-            if (physicsCache->TryGetImpulseData(contactPair.EntityKey, lastImpulseData))
-            {
-                for (uint8_t i = 0; i < contactPair.ContactCount; ++i)
-                {
-                    Contact& newContact = contactPair.Contacts[i];
-                    for (uint8_t j = 0; j < lastImpulseData.ContactCount; ++j)
-                    {
-                        if (newContact.LastImpulse.Feature.Value == lastImpulseData.LastImpulses[j].Feature.Value)
-                        {
-                            //Warm starting
-                            newContact.LastImpulse = lastImpulseData.LastImpulses[j];
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        //Precompute tangents on all contacts
-        for (int i = 0; i < contactPair.ContactCount; ++i)
-        {
-            Contact& contact = contactPair.Contacts[i];
-
-            Fixed16_16 rn1 = contact.R1.Dot(contactPair.Normal);
-            Fixed16_16 rn2 = contact.R2.Dot(contactPair.Normal);
-            Fixed16_16 kNormal = rigidBodyData1.InverseMass + rigidBodyData2.InverseMass;
-            kNormal += rigidBodyData1.InverseInertia * (contact.R1.Dot(contact.R1) - rn1 * rn1) + rigidBodyData2.InverseInertia * (contact.R2.Dot(contact.R2) - rn2 * rn2);
-            contact.MassNormal = Fixed16_16(1) / kNormal;
-
-            Vector2 tangent = contactPair.Normal.Perpendicular();
-            Fixed16_16 rt1 = contact.R1.Dot(tangent);
-            Fixed16_16 rt2 = contact.R2.Dot(tangent);
-            Fixed16_16 kTangent = rigidBodyData1.InverseMass + rigidBodyData2.InverseMass;
-            kTangent += rigidBodyData1.InverseInertia * (contact.R1.Dot(contact.R1) - rt1 * rt1) + rigidBodyData2.InverseInertia * (contact.R2.Dot(contact.R2) - rt2 * rt2);
-            contact.MassTangent = Fixed16_16(1) / kTangent;
         }
     }
 
@@ -212,7 +144,76 @@ public:
 
     void SetupContacts()
     {
+        std::vector<EntityPair> entityPairs;
+        entityPairs.reserve(ContactPairs.size());
+
+        //Rebuild islands
+        for (ContactPair& pair : ContactPairs)
+        {
+            if (pair.EntityStatic1 || pair.EntityStatic2) continue;
+
+            entityPairs.push_back(pair.EntityKey);
+        }
+
+        entityPairs.shrink_to_fit();
+
+        EntityIslandData<true> islandData;
+        m_IslandManager.UpdateIslands<true>(entityPairs, islandData);
+
+        //Check if rigidBody was changed
+        if (useCache)
+        {
+            RigidBodyData cachedRigidBodyData;
+            for (const Entity& entity : Entities)
+            {
+                if (collisionCache->TryGetRigidBodyData(entity, cachedRigidBodyData))
+                {
+                    RigidBodyData& rigidBodyData = rigidBodyDataCollection.GetComponent(entity);
+                    rigidBodyData.Changed = rigidBodyData.Key != cachedRigidBodyData.Key;
+                }
+                else
+                {
+                    rigidBodyDataCollection.GetComponent(entity).Changed = true;
+                }
+            }
+        }
+        else
+        {
+            for (const Entity& entity : Entities)
+            {
+                transformCollection.GetComponent(entity).Changed = true;
+            }
+        }
+
+        //Apply previous impulses
         if (WarmStarting)
+        {
+            for (ContactPair& contactPair : ContactPairs)
+            {
+                ImpulseData lastImpulseData;
+                if (physicsCache->TryGetImpulseData(contactPair.EntityKey, lastImpulseData))
+                {
+                    for (uint8_t i = 0; i < contactPair.ContactCount; ++i)
+                    {
+                        Contact& newContact = contactPair.Contacts[i];
+                        for (uint8_t j = 0; j < lastImpulseData.ContactCount; ++j)
+                        {
+                            if (newContact.LastImpulse.Feature.Value == lastImpulseData.LastImpulses[j].Feature.Value)
+                            {
+                                //Warm starting
+                                newContact.LastImpulse = lastImpulseData.LastImpulses[j];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //Update cache
+        collisionCache->CacheRigidBodyDataCollection(rigidBodyDataCollection);
+
+        if constexpr (WarmStarting)
         {
             for (ContactPair& contactPair : ContactPairs)
             {
@@ -222,7 +223,7 @@ public:
                 for (int i = 0; i < contactPair.ContactCount; ++i)
                 {
                     Contact& contact = contactPair.Contacts[i];
-                    Vector2 tangent = contactPair.Normal.Perpendicular(); //todo already calculated before?
+                    Vector2 tangent = contactPair.Normal.Perpendicular();
 
                     //Apply normal + friction impulse
                     Vector2 P = contactPair.Normal * contact.LastImpulse.Pn + tangent * contact.LastImpulse.Pt;
@@ -232,12 +233,56 @@ public:
 
                     rigidBodyData2.Base.Velocity += P * rigidBodyData2.InverseMass;
                     rigidBodyData2.Base.AngularVelocity += rigidBodyData2.InverseInertia * contact.R2.Cross(P);
+
+
+                    //Compute MassNormal
+                    Fixed16_16 rn1 = contact.R1.Dot(contactPair.Normal);
+                    Fixed16_16 rn2 = contact.R2.Dot(contactPair.Normal);
+                    Fixed16_16 kNormal = rigidBodyData1.InverseMass + rigidBodyData2.InverseMass;
+                    kNormal += rigidBodyData1.InverseInertia * (contact.R1.Dot(contact.R1) - rn1 * rn1) + rigidBodyData2.InverseInertia * (contact.R2.Dot(contact.R2) - rn2 * rn2);
+                    contact.MassNormal = Fixed16_16(1) / kNormal;
+
+                    //Compute MassTangent
+                    Fixed16_16 rt1 = contact.R1.Dot(tangent);
+                    Fixed16_16 rt2 = contact.R2.Dot(tangent);
+                    Fixed16_16 kTangent = rigidBodyData1.InverseMass + rigidBodyData2.InverseMass;
+                    kTangent += rigidBodyData1.InverseInertia * (contact.R1.Dot(contact.R1) - rt1 * rt1) + rigidBodyData2.InverseInertia * (contact.R2.Dot(contact.R2) - rt2 * rt2);
+                    contact.MassTangent = Fixed16_16(1) / kTangent;
+                }
+            }
+        }
+        else
+        {
+            for (ContactPair& contactPair : ContactPairs)
+            {
+                RigidBodyData& rigidBodyData1 = rigidBodyDataCollection.GetComponent(contactPair.EntityKey.Entity1());
+                RigidBodyData& rigidBodyData2 = rigidBodyDataCollection.GetComponent(contactPair.EntityKey.Entity2());
+
+                //Precompute tangents on all contacts
+                for (int i = 0; i < contactPair.ContactCount; ++i)
+                {
+                    Contact& contact = contactPair.Contacts[i];
+
+                    //Compute MassNormal
+                    Fixed16_16 rn1 = contact.R1.Dot(contactPair.Normal);
+                    Fixed16_16 rn2 = contact.R2.Dot(contactPair.Normal);
+                    Fixed16_16 kNormal = rigidBodyData1.InverseMass + rigidBodyData2.InverseMass;
+                    kNormal += rigidBodyData1.InverseInertia * (contact.R1.Dot(contact.R1) - rn1 * rn1) + rigidBodyData2.InverseInertia * (contact.R2.Dot(contact.R2) - rn2 * rn2);
+                    contact.MassNormal = Fixed16_16(1) / kNormal;
+
+                    //Compute MassTangent
+                    Vector2 tangent = contactPair.Normal.Perpendicular();
+                    Fixed16_16 rt1 = contact.R1.Dot(tangent);
+                    Fixed16_16 rt2 = contact.R2.Dot(tangent);
+                    Fixed16_16 kTangent = rigidBodyData1.InverseMass + rigidBodyData2.InverseMass;
+                    kTangent += rigidBodyData1.InverseInertia * (contact.R1.Dot(contact.R1) - rt1 * rt1) + rigidBodyData2.InverseInertia * (contact.R2.Dot(contact.R2) - rt2 * rt2);
+                    contact.MassTangent = Fixed16_16(1) / kTangent;
                 }
             }
         }
     }
 
-    void SolveContacts()
+    void SolveContacts(Fixed16_16 deltaTime)
     {
         for (ContactPair& contactPair : ContactPairs)
         {
@@ -254,8 +299,33 @@ public:
                 //Compute normal impulse
                 Fixed16_16 vn = dv.Dot(contactPair.Normal);
 
-                Fixed16_16 dPn = contact.MassNormal * -vn;
-                if (WarmStarting)
+                // NEW
+                constexpr Fixed16_16 linearSlop = Fixed16_16(1) / Fixed16_16(200);          // ~0.005
+                constexpr Fixed16_16 baumgarteBeta = Fixed16_16(1) / Fixed16_16(3);         // 0.33
+
+                Fixed16_16 dPn;
+
+                if (contact.Separation > Fixed16_16(0))
+                {
+                    //Speculative contact
+                    Fixed16_16 predictiveBias = contact.Separation / deltaTime;
+                    dPn = contact.MassNormal * -(vn + predictiveBias);
+                }
+                else if (contact.Separation > -linearSlop)
+                {
+                    Fixed16_16 penetration = -contact.Separation;
+                    constexpr Fixed16_16 maxCorrection = Fixed16_16(1) / Fixed16_16(60);
+                    Fixed16_16 positionalError = penetration - linearSlop;
+                    //positionalError = fpm::min(positionalError, maxCorrection);
+                    Fixed16_16 bias = (baumgarteBeta / deltaTime) * positionalError;
+                    dPn = contact.MassNormal * (-vn + bias);
+                }
+                else
+                {
+                    dPn = contact.MassNormal * -vn;
+                }
+
+                if constexpr (WarmStarting)
                 {
                     //Clamp the accumulated impulse
                     Fixed16_16 Pn0 = contact.LastImpulse.Pn;
@@ -283,7 +353,7 @@ public:
                 Fixed16_16 vt = dv.Dot(tangent);
                 Fixed16_16 dPt = contact.MassTangent * -vt;
 
-                if (WarmStarting)
+                if constexpr (WarmStarting)
                 {
                     //Compute friction impulse
                     Fixed16_16 maxPt = contactPair.Friction *  contact.LastImpulse.Pn;
@@ -307,8 +377,6 @@ public:
 
                 rigidBodyData2.Base.Velocity += Pt * rigidBodyData2.InverseMass;
                 rigidBodyData2.Base.AngularVelocity += rigidBodyData2.InverseInertia * contact.R2.Cross(Pt);
-
-                //Cache solver data
             }
         }
     }
@@ -323,6 +391,12 @@ public:
 
             Transform& transform = transformCollection.GetComponent(entity);
             RigidBodyData& rigidBodyData = rigidBodyDataCollection.GetComponent(entity);
+
+            // Apply global damping todo
+            //constexpr Fixed16_16 linearDamping = Fixed16_16(1) / Fixed16_16(100);
+            //constexpr Fixed16_16 angularDamping = Fixed16_16(1) / Fixed16_16(100);
+            //rigidBodyData.Base.Velocity *= 1 - linearDamping;
+            //rigidBodyData.Base.AngularVelocity *= 1 - angularDamping;
 
             transform.MovePosition(rigidBodyData.Base.Velocity * deltaTime);
             transform.Rotate(rigidBodyData.Base.AngularVelocity * deltaTime);
@@ -410,6 +484,8 @@ private:
     PhysicsCache* physicsCache;
 
     bool useCache;
+
+    IslandManager m_IslandManager { };
 
 public:
     std::vector<ContactPair> ContactPairs;

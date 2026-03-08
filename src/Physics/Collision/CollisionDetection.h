@@ -79,15 +79,16 @@ public:
 
             Fixed16_16 distance = transform1.Base.Position.Distance(transform2.Base.Position);
             Fixed16_16 totalRadius = circleCollider1.GetRadius() + circleCollider2.GetRadius();
+            Fixed16_16 separation = distance - totalRadius;
 
             //Check if circles overlap
-            if (distance >= totalRadius) return false;
+            if (separation > speculativeDistance) return false;
 
             //Create contact data
             contactPair.ContactCount = 1;
             contactPair.Normal = (transform2.Base.Position - transform1.Base.Position).Normalize();
             contactPair.Contacts[0].Position = transform1.Base.Position + contactPair.Normal * circleCollider1.GetRadius();
-            contactPair.Contacts[0].Separation = distance - totalRadius;
+            contactPair.Contacts[0].Separation = separation;
 
             CreateContactData(contactPair, false, transform1.Base.Position, transform2.Base.Position, entity1, entity2, transform1, transform2, transformMeta1, transformMeta2);
             return true;
@@ -342,9 +343,12 @@ private:
             ProjectVertices(vertices, axis, min1, max1);
             ProjectCircle(circlePosition, circleRadius, axis, min2, max2);
 
-            if (min1 >= max2 || min2 >= max1)  return true;
+            Fixed16_16 overlap1 = max2 - min1;
+            Fixed16_16 overlap2 = max1 - min2;
+            Fixed16_16 axisDepth = min(overlap1, overlap2);
 
-            Fixed16_16 axisDepth = min(max2 - min1, max1 - min2);
+            if (axisDepth < -speculativeDistance) return true;
+
             if (axisDepth < contactPair.Contacts[0].Separation)
             {
                   contactPair.Contacts[0].Separation = axisDepth;
@@ -492,14 +496,12 @@ private:
 
             //Keep points that are behind the reference face plane
             Fixed16_16 faceOffset = refNormal.Dot(reference1);
-            constexpr Fixed16_16 maxSeparation = Fixed16_16(0); //Add bias here possible todo
-
             contactPair.ContactCount = 0;
 
             for (int i = 0; i < clipCount2 && contactPair.ContactCount < 2; ++i)
             {
                   Fixed16_16 separation = refNormal.Dot(clipPoints2[i]) - faceOffset;
-                  if (separation <= maxSeparation)
+                  if (separation <= speculativeDistance)
                   {
                         auto& contact = contactPair.Contacts[contactPair.ContactCount];
                         contact.Position = clipPoints2[i];
@@ -511,6 +513,8 @@ private:
                         ++contactPair.ContactCount;
                   }
             }
+
+            if (contactPair.ContactCount == 0) return false; // todo remove this as it is only a temp fix for a bug, gets called because of a bugged cd with triangles overlap
 
             return true;
       }
@@ -604,6 +608,8 @@ private:
             y = temp;
       }
 
+public:
+      static constexpr Fixed16_16 speculativeDistance = Fixed16_16(1) / Fixed16_16(50);
 private:
       ComponentCollection<CircleCollider>& circleColliderCollection;
       ComponentCollection<BoxCollider>& boxColliderCollection;

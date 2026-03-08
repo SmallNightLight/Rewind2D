@@ -11,6 +11,20 @@ struct RigidBodyBaseData
     Fixed16_16 AngularVelocity;
     uint8_t GravityScale;
     uint8_t MassScale;
+
+    constexpr RigidBodyBaseData() noexcept = default;
+
+    constexpr explicit RigidBodyBaseData(Vector2 velocity, Fixed16_16 angularVelocity, uint8_t gravityScale, uint8_t massScale) noexcept :
+        Velocity(velocity),
+        AngularVelocity(angularVelocity),
+        GravityScale(gravityScale),
+        MassScale(massScale) { }
+
+    constexpr explicit RigidBodyBaseData(Stream& stream) noexcept :
+        Velocity(stream.ReadVector2()),
+        AngularVelocity(stream.ReadFixed()),
+        GravityScale(stream.ReadInteger<uint8_t>()),
+        MassScale(stream.ReadInteger<uint8_t>()) { }
 };
 
 struct RigidBodyKey
@@ -18,12 +32,12 @@ struct RigidBodyKey
     uint64_t Key1;
     uint64_t Key2;
 
-    inline constexpr bool operator==(const TransformKey& other) const noexcept
+    inline constexpr bool operator==(const RigidBodyKey& other) const noexcept
     {
         return Key1 == other.Key1 && Key2 == other.Key2;
     }
 
-    inline constexpr bool operator!=(const TransformKey& other) const noexcept
+    inline constexpr bool operator!=(const RigidBodyKey& other) const noexcept
     {
         return Key1 != other.Key1 || Key2 != other.Key2;
     }
@@ -48,40 +62,37 @@ struct RigidBodyData
     bool Changed;   //Non-persistent flag for caching
 
 public:
-    inline RigidBodyData() noexcept = default;
+    constexpr RigidBodyData() noexcept = default;
 
-    constexpr inline explicit RigidBodyData(const Fixed16_16& mass, const Fixed16_16& restitution, const Fixed16_16& inertia, const Fixed16_16& staticFriction, const Fixed16_16& dynamicFriction) :
-        Base{ Vector2(0,0), Fixed16_16(0), 1, 1 },
+    constexpr explicit RigidBodyData(const Fixed16_16& mass, const Fixed16_16& restitution, const Fixed16_16& inertia, const Fixed16_16& staticFriction, const Fixed16_16& dynamicFriction) :
+        Base(Vector2(0,0), Fixed16_16(0), 1, 1),
         Force(0, 0),
         InverseMass(1 / mass),
         Restitution(restitution),
         InverseInertia(1 / inertia),
         StaticFriction(staticFriction),
-        DynamicFriction(dynamicFriction) { }
+        DynamicFriction(dynamicFriction),
+        Changed(true) { }
 
-    constexpr inline explicit RigidBodyData(const Fixed16_16& staticFriction, const Fixed16_16& dynamicFriction) :
-    Base{ Vector2(0,0), Fixed16_16(0), 0, 0 },
+    constexpr explicit RigidBodyData(const Fixed16_16& staticFriction, const Fixed16_16& dynamicFriction) :
+        Base(Vector2(0,0), Fixed16_16(0), 0, 0),
         Force(0, 0),
         InverseMass(0),
         Restitution(0),
         InverseInertia(0),
         StaticFriction(staticFriction),
-        DynamicFriction(dynamicFriction) { }
+        DynamicFriction(dynamicFriction),
+        Changed(true) { }
 
-    inline explicit RigidBodyData(Stream& stream)
-    {
-        Base.Velocity = stream.ReadVector2();
-        Base.AngularVelocity = stream.ReadFixed();
-        Base.GravityScale = stream.ReadInteger<uint8_t>();
-        Base.MassScale = stream.ReadInteger<uint8_t>();
-
-        Force = stream.ReadVector2();
-        InverseMass = stream.ReadFixed();
-        Restitution = stream.ReadFixed();
-        InverseInertia = stream.ReadFixed();
-        StaticFriction = stream.ReadFixed();
-        DynamicFriction = stream.ReadFixed();
-    }
+    constexpr explicit RigidBodyData(Stream& stream) :
+        Base(stream),
+        Force(stream.ReadVector2()),
+        InverseMass(stream.ReadFixed()),
+        Restitution(stream.ReadFixed()),
+        InverseInertia(stream.ReadFixed()),
+        StaticFriction(stream.ReadFixed()),
+        DynamicFriction(stream.ReadFixed()),
+        Changed(true) { }
 
     constexpr static RigidBodyData CreateStaticRigidBody(const Fixed16_16& staticFriction, const Fixed16_16& dynamicFriction)
     {

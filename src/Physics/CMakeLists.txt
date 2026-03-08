@@ -12,7 +12,6 @@ add_library(Physics INTERFACE
         Additional/RigidBodyType.h
 
         Collision/CollisionDetection.h
-        Collision/CollisionCache.h
         Collision/unordered_dense.h
         Collision/ContactPair.h
         Collision/PhysicsCache.h
@@ -22,6 +21,10 @@ add_library(Physics INTERFACE
         Cache/SortedDoubleSet.h
         Cache/SortedDoubleMap.h
         Cache/SortedMapArray.h
+        Additional/IslandManager.h
+        Cache/ContactCache.h
+        Cache/ContactCache2.h
+        Cache/CollisionCache.h
 
         Components/Transform.h
         Components/TransformMeta.h
@@ -37,6 +40,4 @@ add_library(Physics INTERFACE
         Systems/CircleColliderRenderer.h
         Systems/PolygonColliderRenderer.h
         Systems/MovingSystem.h
-        Cache/ContactCache.h
-        Cache/ContactCache2.h
 )

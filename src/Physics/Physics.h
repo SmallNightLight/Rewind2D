@@ -30,7 +30,7 @@ using PhysicsSignature = std::bitset<PhysicsComponentCount>;
 #include "Cache/ComponentCollectionCache.h"
 using TransformCache = ComponentCollectionCache<Transform>;
 using RigidBodyDataCache = ComponentCollectionCache<RigidBodyData>;
-#include "Collision/CollisionCache.h"
+#include "Cache/CollisionCache.h"
 #include "Collision/PhysicsCache.h"
 
 //Systems

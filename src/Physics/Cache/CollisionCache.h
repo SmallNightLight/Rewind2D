@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ContactPair.h"
-#include "../../ECS/ECSSettings.h"
-
 #include <vector>
+
+#include "../Collision/ContactPair.h"
+#include "../../ECS/ECSSettings.h"
 
 class CollisionCache
 {

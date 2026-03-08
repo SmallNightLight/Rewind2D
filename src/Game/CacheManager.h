@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Physics/Collision/CollisionCache.h"
+#include "../Physics/Cache/CollisionCache.h"
 #include "../Physics/PhysicsSettings.h"
 #include "../ECS/ECSSettings.h"
 
