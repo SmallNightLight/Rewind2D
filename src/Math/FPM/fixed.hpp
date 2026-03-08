@@ -23,7 +23,7 @@ class fixed
     static_assert(std::is_integral<BaseType>::value, "BaseType must be an integral type");
     static_assert(FractionBits > 0, "FractionBits must be greater than zero");
     static_assert(FractionBits <= sizeof(BaseType) * 8 - 1, "BaseType must at least be able to contain entire fraction, with space for at least one integral bit");
-    static_assert(sizeof(IntermediateType) > sizeof(BaseType), "IntermediateType must be larger than BaseType");
+    static_assert(sizeof(IntermediateType) == sizeof(BaseType) * 2, "IntermediateType must be twice as wide");
     static_assert(std::is_signed<IntermediateType>::value == std::is_signed<BaseType>::value, "IntermediateType must have same signedness as BaseType");
     static_assert(sizeof(FractionType) * 8 == FractionBits, "FractionType needs to be the same size as FractionBits");
     static_assert(std::is_signed<FractionType>::value == std::is_signed<BaseType>::value, "FractionType must have same signedness as BaseType");
@@ -222,19 +222,22 @@ public:
         return *this;
     }
 
-    constexpr inline fixed& operator*=(const fixed& y) noexcept
+    constexpr inline fixed& operator*=(const fixed& y) noexcept //todo make custom class, implemented here the bit shift trick, can also be done in math lib
     {
-	if (EnableRounding){
-	    // Normal fixed-point multiplication is: x * y / 2**FractionBits.
-	    // To correctly round the last bit in the result, we need one more bit of information.
-	    // We do this by multiplying by two before dividing and adding the LSB to the real result.
-	    auto value = (static_cast<IntermediateType>(m_value) * y.m_value) / (FRACTION_MULT / 2);
-	    m_value = static_cast<BaseType>((value / 2) + (value % 2));
-	} else {
-	    auto value = (static_cast<IntermediateType>(m_value) * y.m_value) / FRACTION_MULT;
-	    m_value = static_cast<BaseType>(value);
-	}
-	return *this;
+        if constexpr (EnableRounding)
+        {
+	        // Normal fixed-point multiplication is: x * y / 2**FractionBits.
+	        // To correctly round the last bit in the result, we need one more bit of information.
+	        // We do this by multiplying by two before dividing and adding the LSB to the real result.
+	        auto value = (static_cast<IntermediateType>(m_value) * y.m_value) / (FRACTION_MULT / 2);
+	        m_value = static_cast<BaseType>((value / 2) + (value % 2));
+	    }
+        else
+        {
+	        auto value = (static_cast<IntermediateType>(m_value) * y.m_value) >> FractionBits;
+	        m_value = static_cast<BaseType>(value);
+	    }
+	    return *this;
     }
 
     //Custom Prefix / Postfix operators
@@ -281,7 +284,7 @@ public:
 	    auto value = (static_cast<IntermediateType>(m_value) * FRACTION_MULT * 2) / y.m_value;
 	    m_value = static_cast<BaseType>((value / 2) + (value % 2));
 	} else {
-	    auto value = (static_cast<IntermediateType>(m_value) * FRACTION_MULT) / y.m_value;
+	    auto value = (static_cast<IntermediateType>(m_value) << FractionBits) / y.m_value;
 	    m_value = static_cast<BaseType>(value);
 	}
         return *this;
