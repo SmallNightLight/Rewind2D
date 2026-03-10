@@ -130,5 +130,5 @@ private:
     ComponentCollection<ColliderRenderData>& colliderRenderDataCollection;
 
 public:
-    EntitySet<s_MaxEntities> Entities;
+    EntitySet Entities;
 };

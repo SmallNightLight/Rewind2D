@@ -46,13 +46,13 @@ public:
         SetupEntityTransforms(useCache);
         collisionCache->CacheTransformCollection(transformCollection);
 
-        for (Entity* it1 = Entities.begin(); it1 != Entities.end(); ++it1) //todo IMPORTANT entityset is not sorted!
+        for (auto it1 = Entities.begin(); it1 != Entities.end(); ++it1)
         {
             const Entity& entity1 = *it1;
             Transform& transform1 = transformCollection.GetComponent(entity1);
 
             //Detect collisions
-            for (Entity* it2 = std::next(it1); it2 != Entities.end(); ++it2)
+            for (auto it2 = std::next(it1); it2 != Entities.end(); ++it2)
             {
                 const Entity& entity2 = *it2;
 
@@ -489,5 +489,5 @@ private:
 
 public:
     std::vector<ContactPair> ContactPairs;
-    EntitySet<s_MaxEntities> Entities;
+    EntitySet Entities;
 };

@@ -3,11 +3,10 @@
 #include <cstdint>
 #include <cassert>
 #include <array>
-#include <cstring>
+#include <algorithm>
 
 #include "ECSSettings.h"
 
-template<uint32_t N_Capacity>
 class EntitySet
 {
 public:
@@ -17,7 +16,11 @@ public:
 
     constexpr void Initialize() noexcept
     {
-        m_EntityToIndex.fill(s_InvalidEntity);
+        std::fill_n(m_Data.begin(), s_MaxEntities, s_Empty);
+        m_Data[s_EntityTail] = s_EntityTail;
+        m_Data[s_Empty] = s_EntityTail;
+        m_Head = s_Empty;
+        m_Tail = s_Empty;
         m_EntityCount = 0;
     }
 
@@ -25,73 +28,182 @@ public:
     {
         assert(entity < s_MaxEntities && "Entity out of range");
 
-        if (m_EntityToIndex[entity] != s_InvalidEntity) return false;
+        if (Contains(entity)) return false;
 
-        assert(m_EntityCount < Capacity && "EntitySet capacity exceeded");
+        ++m_EntityCount;
 
-        uint32_t index = m_EntityCount++;
-        m_Entities[index] = entity;
-        m_EntityToIndex[entity] = index;
+        if (m_Head == s_Empty)
+        {
+            //No entities in set
+            m_Head = entity;
+            m_Tail = entity;
+            m_Data[entity] = s_EntityTail;
+        }
+        else if (entity < m_Head)
+        {
+            m_Data[entity] = m_Head;
+            m_Head = entity;
+        }
+        else if (entity > m_Tail)
+        {
+            m_Data[m_Tail] = entity;
+            m_Data[entity] = s_EntityTail;
+            m_Tail = entity;
+        }
+        else
+        {
+            //Search backwards to find predecessor
+            for (Entity i = entity - 1; i > m_Head; --i)
+            {
+                if (Contains(i))
+                {
+                    m_Data[entity] = m_Data[i];
+                    m_Data[i] = entity;
+                    return true;
+                }
+            }
+
+            assert(Contains(m_Head) && "Could not find predecessor in EntitySet");
+
+            m_Data[entity] = m_Data[m_Head];
+            m_Data[m_Head] = entity;
+        }
 
         return true;
     }
 
     //Removes the entity from the set
-    constexpr void Erase(Entity entity)
+    constexpr bool Erase(Entity entity)
     {
         assert(entity < s_MaxEntities && "Entity out of range");
 
-        uint32_t index = m_EntityToIndex[entity];
+        if (m_EntityCount == 0 || !Contains(entity)) return false;
 
-        if (m_EntityCount == 0 || index == s_InvalidEntity) return;
-
-        uint32_t lastIndex = m_EntityCount - 1;
-        Entity lastEntity = m_Entities[lastIndex];
-
-        //Swap the last entity into the removed spot
-        m_Entities[index] = lastEntity;
-        m_EntityToIndex[lastEntity] = index;
-
-        //Invalidate the removed entity
-        m_EntityToIndex[entity] = s_InvalidEntity;
         --m_EntityCount;
+
+        if (m_EntityCount == 0)
+        {
+            m_Data[entity] = s_Empty;
+            m_Head = s_Empty;
+            m_Tail = s_Empty;
+        }
+        else if (entity == m_Head)
+        {
+            m_Head = m_Data[entity];
+            m_Data[entity] = s_Empty;
+        }
+        else
+        {
+            //Search backwards to find predecessor
+            for (Entity i = entity - 1; i > m_Head; --i)
+            {
+                if (Contains(i))
+                {
+                    m_Data[i] = m_Data[entity];
+                    m_Data[entity] = s_Empty;
+
+                    if (entity == m_Tail)
+                    {
+                        m_Tail = i;
+                    }
+
+                    return true;
+                }
+            }
+
+            assert(Contains(m_Head) && "Could not find predecessor in EntitySet");
+
+            m_Data[m_Head] = m_Data[entity];
+            m_Data[entity] = s_Empty;
+
+            if (entity == m_Tail)
+            {
+                m_Tail = m_Head;
+            }
+
+            return true;
+        }
+
+        return true;
     }
 
     [[nodiscard]] constexpr bool Contains(Entity entity) const
     {
         assert(entity < s_MaxEntities && "Entity out of range");
-        return m_EntityToIndex[entity] != s_InvalidEntity;
+        return m_Data[entity] != s_Empty;
     }
 
     constexpr void Clear() noexcept
     {
-        m_EntityToIndex.fill(s_InvalidEntity);
+        std::fill_n(m_Data.begin(), s_MaxEntities, s_Empty);
+        m_Data[s_EntityTail] = s_EntityTail;
+        m_Data[s_Empty] = s_EntityTail;
+        m_Head = s_Empty;
+        m_Tail = s_Empty;
         m_EntityCount = 0;
     }
 
-    // more optimized then the assignment operator
     void Overwrite(const EntitySet& other) noexcept
     {
         if (this == &other) return;
 
-        std::memcpy(m_Entities.data(), other.m_Entities.data(), other.m_EntityCount * sizeof(Entity));
-        std::memcpy(m_EntityToIndex.data(), other.m_EntityToIndex.data(), m_EntityToIndex.size() * sizeof(uint32_t));
+        m_Data = other.m_Data;
+        m_Head = other.m_Head;
+        m_Tail = other.m_Tail;
         m_EntityCount = other.m_EntityCount;
     }
 
+    class Iterator
+    {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type        = Entity;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = const Entity*;
+        using reference         = const Entity&;
+
+        Iterator(const std::array<Entity, s_MaxEntities + 2>& data, Entity current) : m_Data(data.data()), m_Entity(current) { }
+
+        Entity operator*() const
+        {
+            return m_Entity;
+        }
+
+        Iterator& operator++()
+        {
+            m_Entity = m_Data[m_Entity];
+            return *this;
+        }
+
+        bool operator==(const Iterator& other) const
+        {
+            return m_Entity == other.m_Entity;
+        }
+
+        bool operator!=(const Iterator& other) const
+        {
+            return m_Entity != other.m_Entity;
+        }
+
+    private:
+        const Entity* m_Data;
+        Entity m_Entity;
+    };
+
     [[nodiscard]] constexpr uint32_t Size() const noexcept { return m_EntityCount; }
     [[nodiscard]] constexpr bool Empty() const noexcept { return m_EntityCount == 0; }
-    static constexpr uint32_t Capacity = N_Capacity;
 
-    [[nodiscard]] constexpr Entity* begin() noexcept { return m_Entities.data(); }
-    [[nodiscard]] constexpr Entity* end() noexcept { return m_Entities.data() + m_EntityCount; }
-    [[nodiscard]] constexpr const Entity* begin() const noexcept { return m_Entities.data(); }
-    [[nodiscard]] constexpr const Entity* end() const noexcept { return m_Entities.data() + m_EntityCount; }
+    [[nodiscard]] constexpr Iterator begin() const noexcept { return Iterator(m_Data, m_Head); }
+    [[nodiscard]] constexpr Iterator end() const noexcept { return Iterator(m_Data, s_EntityTail); }
 
 private:
-    std::array<Entity, Capacity> m_Entities;
-    std::array<uint32_t, s_MaxEntities> m_EntityToIndex;
-    uint32_t m_EntityCount;
+    static constexpr Entity s_EntityTail = s_MaxEntities;
+    static constexpr Entity s_Empty = s_MaxEntities + 1;
+
+    std::array<Entity, s_MaxEntities + 2> m_Data;
+    Entity m_Head;
+    Entity m_Tail;
+    UInt_E m_EntityCount;
 };
 
-static_assert(IsTrivial<EntitySet<10>>, "EntitySet needs to be trivial");
+static_assert(IsTrivial<EntitySet>, "EntitySet needs to be trivial");
