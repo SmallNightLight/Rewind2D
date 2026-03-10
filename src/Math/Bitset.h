@@ -69,15 +69,21 @@ public:
         uint32_t bitOffset = start & 63;
         uint64_t bits = m_Data[index] & (~0ull << bitOffset);
 
-        while (index < WordCount)
+        if (bits != 0)
         {
+            uint32_t result = (index << 6) + std::countr_zero(bits);
+            return result < Capacity ? result : Capacity;
+        }
+
+        while (++index < WordCount)
+        {
+            bits = m_Data[index];
+
             if (bits != 0)
             {
                 uint32_t result = (index << 6) + std::countr_zero(bits);
                 return result < Capacity ? result : Capacity;
             }
-
-            bits = m_Data[++index];
         }
 
         return Capacity;
